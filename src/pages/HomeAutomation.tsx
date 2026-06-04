@@ -28,13 +28,13 @@ import {
 } from 'lucide-react';
 
 // --- Helper: Glowing pulse animation for lights ---
-const glowingPulse = {
-  initial: { boxShadow: '0 0 0px rgba(201,168,76,0)' },
-  active: {
-    boxShadow: '0 0 15px rgba(201,168,76,0.8), 0 0 30px rgba(201,168,76,0.4)',
-    transition: { repeat: Infinity, repeatType: 'reverse', duration: 1.5 },
-  },
-};
+// const glowingPulse = {
+//   initial: { boxShadow: '0 0 0px rgba(201,168,76,0)' },
+//   active: {
+//     boxShadow: '0 0 15px rgba(201,168,76,0.8), 0 0 30px rgba(201,168,76,0.4)',
+//     transition: { repeat: Infinity, repeatType: 'reverse', duration: 1.5 },
+//   },
+// };
 
 // --- Room Visualization Component ---
 interface RoomProps {
