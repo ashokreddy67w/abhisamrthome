@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SERVICES } from '../../data';
+import { Link } from "react-router-dom";
 
 const ServicesSection: React.FC = () => {
   const [hovered, setHovered] = useState<string | null>(null);
@@ -41,65 +42,70 @@ const ServicesSection: React.FC = () => {
         {/* Services Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {SERVICES.map((service, i) => (
-            <motion.div
+            <Link
               key={service.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.07 }}
-              onHoverStart={() => setHovered(service.id)}
-              onHoverEnd={() => setHovered(null)}
-              className="group relative bg-gray-800/50 border border-white/10 hover:border-gold-500/40 rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:bg-gray-800 cursor-pointer flex flex-col"
+              to={`/services/${service.id}`}
+              className="block"
             >
-              {/* Icon */}
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gold-500/10 flex items-center justify-center text-2xl sm:text-3xl mb-4 group-hover:scale-110 transition-transform">
-                {service.icon}
-              </div>
-
-              {/* Title */}
-              <h3 className="text-white font-semibold text-base sm:text-lg mb-2">{service.title}</h3>
-
-              {/* Description */}
-              <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mb-4 flex-grow">
-                {service.description}
-              </p>
-
-              {/* Features */}
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {service.features.map((f) => (
-                  <span
-                    key={f}
-                    className="text-xs px-2 py-0.5 bg-gold-500/10 text-gold-400 border border-gold-500/20 rounded-full"
-                  >
-                    {f}
-                  </span>
-                ))}
-              </div>
-
-              {/* Price & CTA */}
-              <div className="flex items-center justify-between">
-                <span className="text-gold-400 font-semibold text-xs sm:text-sm">{service.price}</span>
-                <a
-                  href="https://wa.me/919876543210"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-gray-400 hover:text-gold-400 transition-colors flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Get Quote →
-                </a>
-              </div>
-
-              {/* Hover Glow */}
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: hovered === service.id ? 1 : 0 }}
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                style={{
-                  background: 'radial-gradient(circle at top left, rgba(201,168,76,0.08), transparent 70%)',
-                }}
-              />
-            </motion.div>
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.07 }}
+                onHoverStart={() => setHovered(service.id)}
+                onHoverEnd={() => setHovered(null)}
+                className="group relative bg-gray-800/50 border border-white/10 hover:border-gold-500/40 rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:bg-gray-800 cursor-pointer flex flex-col"
+              >
+                {/* Icon */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gold-500/10 flex items-center justify-center text-2xl sm:text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  {service.icon}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-white font-semibold text-base sm:text-lg mb-2">{service.title}</h3>
+
+                {/* Description */}
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mb-4 flex-grow">
+                  {service.description}
+                </p>
+
+                {/* Features */}
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {service.features.map((f) => (
+                    <span
+                      key={f}
+                      className="text-xs px-2 py-0.5 bg-gold-500/10 text-gold-400 border border-gold-500/20 rounded-full"
+                    >
+                      {f}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Price & CTA */}
+                <div className="flex items-center justify-between">
+                  <span className="text-gold-400 font-semibold text-xs sm:text-sm">{service.price}</span>
+                  <a
+                    href="https://wa.me/919876543210"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-400 hover:text-gold-400 transition-colors flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Get Quote →
+                  </a>
+                </div>
+
+                {/* Hover Glow */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: hovered === service.id ? 1 : 0 }}
+                  className="absolute inset-0 rounded-2xl pointer-events-none"
+                  style={{
+                    background: 'radial-gradient(circle at top left, rgba(201,168,76,0.08), transparent 70%)',
+                  }}
+                />
+              </motion.div>
+            </Link>
           ))}
         </div>
 
