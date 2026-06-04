@@ -64,12 +64,12 @@ const Footer: React.FC = () => {
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-2">
                 <span>📍</span>
-                <span>MG Road, Guntur,<br />Andhra Pradesh – 522 001</span>
+                <span>Lakshmipuram , Guntur,<br />Andhra Pradesh – 522 001</span>
               </div>
               <div className="flex items-center gap-2">
                 <span>📞</span>
-                <a href="tel:+919876543210" className="hover:text-gold-400 transition-colors">
-                  +91 98765 43210
+                <a href="tel:+919248683744" className="hover:text-gold-400 transition-colors">
+                  92486 83744
                 </a>
               </div>
               <div className="flex items-center gap-2">

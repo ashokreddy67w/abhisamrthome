@@ -63,10 +63,10 @@ const ContactSection: React.FC = () => {
           >
             {/* Info Cards */}
             {[
-              { icon: '📞', title: 'Call Us', content: '+91 98765 43210', href: 'tel:+919876543210' },
-              { icon: '💬', title: 'WhatsApp', content: '+91 98765 43210', href: 'https://wa.me/919876543210' },
+              { icon: '📞', title: 'Call Us', content: '+91  92486 83744', href: 'tel:+919248683744' },
+              { icon: '💬', title: 'WhatsApp', content: '+91  92486 83744', href: 'https://wa.me/919248683744' },
               { icon: '✉️', title: 'Email', content: 'info@abheesmarthome.com', href: 'mailto:info@abheesmarthome.com' },
-              { icon: '📍', title: 'Location', content: 'MG Road, Guntur, Andhra Pradesh – 522 001', href: '#' },
+              { icon: '📍', title: 'Location', content: 'Lakshmipuram , Guntur, Andhra Pradesh – 522 001', href: '#' },
             ].map((item) => (
               <motion.a
                 key={item.title}
@@ -136,7 +136,7 @@ const ContactSection: React.FC = () => {
                         required
                         value={form.phone}
                         onChange={e => setForm({ ...form, phone: e.target.value })}
-                        placeholder="+91 98765 43210"
+                        placeholder="+91  92486 83744"
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gold-500/50 transition-colors"
                       />
                     </div>

@@ -95,14 +95,14 @@ const HeroSection: React.FC = () => {
             className="flex flex-col xs:flex-row flex-wrap gap-3 sm:gap-4"
           >
             <a
-              href="tel:+919876543210"
+              href="tel:+919248683744"
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-gold-500 to-gold-700 text-gray-900 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm sm:text-base font-bold hover:opacity-90 transition-opacity shadow-lg shadow-gold-500/30 animate-pulse-gold"
             >
-              📞 Call Now: +91 98765 43210
+              📞 Call Now: +91  92486 83744
             </a>
 
             <a
-              href="https://wa.me/919876543210?text=Hi%20ABHEE%2C%20I%20want%20a%20free%20consultation%20for%20smart%20home"
+              href="https://wa.me/91926483744?text=Hi%20ABHEE%2C%20I%20want%20a%20free%20consultation%20for%20smart%20home"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm sm:text-base font-bold transition-colors shadow-lg"

@@ -121,7 +121,7 @@ const ServicesSection: React.FC = () => {
               📞 Call for Free Consultation
             </a>
             <a
-              href="https://wa.me/919876543210"
+              href="https://wa.me/9246483744"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-6 sm:px-8 py-3 rounded-full text-sm sm:text-base font-bold transition-colors"

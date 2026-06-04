@@ -83,13 +83,13 @@ const FAQSection: React.FC = () => {
           <p className="text-gray-400 text-sm mb-4">Our experts are ready to help you</p>
           <div className="flex flex-col xs:flex-row justify-center gap-3">
             <a
-              href="tel:+919876543210"
+              href="tel:+919246483744"
               className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-gold-500 to-gold-700 text-gray-900 px-5 py-2.5 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
             >
               📞 Call Us
             </a>
             <a
-              href="https://wa.me/919876543210"
+              href="https://wa.me/919246483744"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-green-500 transition-colors"

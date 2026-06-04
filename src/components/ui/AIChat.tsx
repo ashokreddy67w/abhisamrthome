@@ -21,7 +21,7 @@ const getBotResponse = (msg: string): string => {
     return 'Yes! We serve Guntur, Vijayawada, Tenali, Narasaraopet, and all surrounding areas in Andhra Pradesh. We also take large projects anywhere in AP & Telangana.';
   }
   if (m.includes('consult') || m.includes('book') || m.includes('visit') || m.includes('appointment')) {
-    return 'Great! To book your FREE home consultation, please call us at 📞 +91 98765 43210 or click the WhatsApp button to chat directly. We\'ll visit your home at your convenience!';
+    return 'Great! To book your FREE home consultation, please call us at 📞 +91 92486 83744 or click the WhatsApp button to chat directly. We\'ll visit your home at your convenience!';
   }
   if (m.includes('warranty') || m.includes('guarantee') || m.includes('support')) {
     return 'We provide a 1-year comprehensive warranty on all installations with free service visits. We also offer Annual Maintenance Contracts (AMC) for ongoing peace of mind.';
@@ -29,7 +29,7 @@ const getBotResponse = (msg: string): string => {
   if (m.includes('hi') || m.includes('hello') || m.includes('hey')) {
     return 'Hello! Welcome to ABHEE Smart Home Systems 👋 I\'m here to help you transform your home. What would you like to know?';
   }
-  return 'Thank you for your interest! For detailed information, please call us at +91 98765 43210 or WhatsApp us. Our experts are available Mon-Sat 9AM-7PM.';
+  return 'Thank you for your interest! For detailed information, please call us at +91 92486 83744 or WhatsApp us. Our experts are available Mon-Sat 9AM-7PM.';
 };
 
 const AIChat: React.FC = () => {
