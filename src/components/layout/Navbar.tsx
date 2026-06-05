@@ -144,7 +144,7 @@ const Navbar: React.FC = () => {
                   📞 Call Now
                 </a>
                 <a
-                  href="https://wa.me/919876543210"
+                  href="https://wa.me/91926483744" // Updated WhatsApp number
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 text-center bg-green-600 text-white px-4 py-3 rounded-lg text-sm font-bold"

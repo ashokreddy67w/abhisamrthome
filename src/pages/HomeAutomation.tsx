@@ -1,522 +1,549 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Lightbulb,
- 
-  Thermometer,
-  Lock,
-  Unlock,
-  Camera,
-  Tv,
- Blinds,
-  Wind,
-  Home,
-  BedDouble,
-  Utensils,
-  Clapperboard,
-  Sofa,
-  Sun,
-  Moon,
-  Film,
-  LogOut,
-  Music,
-  Sparkles,
- 
-  Wifi,
+import React, { useState, useEffect, useRef } from 'react';
 
-  Disc,
-} from 'lucide-react';
+const AbheeSmartHome = () => {
+  // ---------- State ----------
+  const [balconyOn, setBalconyOn] = useState(false);
+  const [parkingOn, setParkingOn] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const toastTimerRef = useRef(null);
 
-// --- Helper: Glowing pulse animation for lights ---
-// const glowingPulse = {
-//   initial: { boxShadow: '0 0 0px rgba(201,168,76,0)' },
-//   active: {
-//     boxShadow: '0 0 15px rgba(201,168,76,0.8), 0 0 30px rgba(201,168,76,0.4)',
-//     transition: { repeat: Infinity, repeatType: 'reverse', duration: 1.5 },
-//   },
-// };
+  // ---------- Helper: Show Toast ----------
+  const showToastMessage = (message) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    setShowToast(true);
+    toastTimerRef.current = setTimeout(() => {
+      setShowToast(false);
+    }, 2400);
+  };
 
-// --- Room Visualization Component ---
-interface RoomProps {
-  name: string;
-  icon: React.ReactNode;
-  lightOn: boolean;
-  hasCurtain?: boolean;
-  curtainOpen?: boolean;
-  acOn?: boolean;
-  onToggleLight?: () => void;
-}
-
-const RoomCard: React.FC<RoomProps> = ({ name, icon, lightOn, hasCurtain, curtainOpen, acOn, onToggleLight }) => {
-  return (
-    <motion.div
-      whileHover={{ y: -5, scale: 1.02 }}
-      className={`relative backdrop-blur-md rounded-2xl p-3 sm:p-4 border transition-all duration-300 cursor-pointer ${
-        lightOn
-          ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_15px_rgba(201,168,76,0.3)]'
-          : 'bg-white/5 border-white/10 hover:border-amber-500/20'
-      }`}
-      onClick={onToggleLight}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`text-2xl transition-all ${lightOn ? 'text-amber-400 drop-shadow-glow' : 'text-gray-500'}`}>
-            {icon}
-          </div>
-          <span className="text-sm sm:text-base font-medium text-white">{name}</span>
-        </div>
-        {lightOn && (
-          <motion.div
-            className="w-2 h-2 rounded-full bg-amber-400"
-            animate={{ scale: [1, 1.5, 1] }}
-            transition={{ repeat: Infinity, duration: 1.2 }}
-          />
-        )}
-      </div>
-      <div className="flex gap-3 mt-2 text-xs text-gray-400">
-        {hasCurtain !== undefined && (
-          <div className="flex items-center gap-1">
-            <Blinds size={12} />
-            <span>{curtainOpen ? 'Open' : 'Closed'}</span>
-          </div>
-        )}
-        {acOn !== undefined && acOn && (
-          <div className="flex items-center gap-1 text-cyan-400">
-            <Wind size={12} /> <span>AC</span>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-};
-
-// --- Main Component ---
-const SmartHomeExperience: React.FC = () => {
-  // ----- State -----
-  const [lights, setLights] = useState({
-    living: true,
-    bedroom: false,
-    kitchen: false,
-    hall: true,
-  });
-  const [curtainsOpen, setCurtainsOpen] = useState(true);
-  const [acOn, setAcOn] = useState(true);
-  const [acTemp, setAcTemp] = useState(22);
-  const [doorLocked, setDoorLocked] = useState(true);
-  const [cctvActive, setCctvActive] = useState(true);
-  const [theaterOn, setTheaterOn] = useState(false);
-  const [partyMode, setPartyMode] = useState(false);
-  const [activeScene, setActiveScene] = useState<string | null>(null);
-
-  // For dynamic AC cooling animation
-  const [acCooling, setAcCooling] = useState(false);
+  // ---------- Lighting Logic (opacity transitions, no image swap) ----------
   useEffect(() => {
-    if (acOn) {
-      const interval = setInterval(() => setAcCooling((prev) => !prev), 800);
-      return () => clearInterval(interval);
+    // Get overlay elements (will be available after render)
+    const balconyOverlay = document.getElementById('balconyOverlay');
+    const parkingOverlay = document.getElementById('parkingOverlay');
+    const allOnOverlay = document.getElementById('allOnOverlay');
+    if (!balconyOverlay) return;
+
+    if (balconyOn && parkingOn) {
+      // Both ON → show alllighton.png
+      balconyOverlay.style.opacity = '0';
+      parkingOverlay.style.opacity = '0';
+      allOnOverlay.style.opacity = '1';
+    } else if (balconyOn && !parkingOn) {
+      // Only balcony
+      balconyOverlay.style.opacity = '1';
+      parkingOverlay.style.opacity = '0';
+      allOnOverlay.style.opacity = '0';
+    } else if (!balconyOn && parkingOn) {
+      // Only parking
+      balconyOverlay.style.opacity = '0';
+      parkingOverlay.style.opacity = '1';
+      allOnOverlay.style.opacity = '0';
     } else {
-      setAcCooling(false);
+      // Both OFF
+      balconyOverlay.style.opacity = '0';
+      parkingOverlay.style.opacity = '0';
+      allOnOverlay.style.opacity = '0';
     }
-  }, [acOn]);
+  }, [balconyOn, parkingOn]);
 
-  // Party mode RGB cycle (simulated by changing text/border colors)
-  const [partyColor, setPartyColor] = useState('#C9A84C');
-  useEffect(() => {
-    if (!partyMode) return;
-    const colors = ['#C9A84C', '#FF6B6B', '#4ECDC4', '#FFE66D', '#A5678F'];
-    let i = 0;
-    const interval = setInterval(() => {
-      setPartyColor(colors[i % colors.length]);
-      i++;
-    }, 400);
-    return () => clearInterval(interval);
-  }, [partyMode]);
+  // ---------- UI Updates for Badges & Button Labels ----------
+  // (Reactive – they derive from state directly in JSX, no extra effect needed)
 
-  // ----- Scene Handlers -----
-  const activateMorning = () => {
-    setPartyMode(false);
-    setActiveScene('morning');
-    setLights({ living: true, bedroom: true, kitchen: true, hall: true });
-    setCurtainsOpen(true);
-    setAcOn(false);
-    setTheaterOn(false);
-    setDoorLocked(false);
-    setCctvActive(true);
-  };
-  const activateNight = () => {
-    setPartyMode(false);
-    setActiveScene('night');
-    setLights({ living: false, bedroom: false, kitchen: false, hall: true });
-    setCurtainsOpen(false);
-    setAcOn(true);
-    setAcTemp(24);
-    setDoorLocked(true);
-    setCctvActive(true);
-    setTheaterOn(false);
-  };
-  const activateMovie = () => {
-    setPartyMode(false);
-    setActiveScene('movie');
-    setLights({ living: false, bedroom: false, kitchen: false, hall: true }); // hall = ambient
-    setCurtainsOpen(false);
-    setAcOn(true);
-    setAcTemp(20);
-    setTheaterOn(true);
-    setDoorLocked(true);
-    setCctvActive(true);
-  };
-  const activateAway = () => {
-    setPartyMode(false);
-    setActiveScene('away');
-    setLights({ living: false, bedroom: false, kitchen: false, hall: false });
-    setCurtainsOpen(false);
-    setAcOn(false);
-    setTheaterOn(false);
-    setDoorLocked(true);
-    setCctvActive(true);
-  };
-  const activateParty = () => {
-    setActiveScene('party');
-    setPartyMode(true);
-    setLights({ living: true, bedroom: true, kitchen: true, hall: true });
-    setCurtainsOpen(false);
-    setAcOn(true);
-    setAcTemp(18);
-    setTheaterOn(true);
-    setDoorLocked(true);
-    setCctvActive(true);
+  // ---------- Event Handlers ----------
+  const toggleBalcony = () => {
+    const newState = !balconyOn;
+    setBalconyOn(newState);
+    showToastMessage(newState ? '✨ Balcony Lights Activated' : '🌙 Balcony Lights Deactivated');
   };
 
-  // Individual device toggles
-  const toggleLight = (room: keyof typeof lights) => {
-    setPartyMode(false);
-    setActiveScene(null);
-    setLights((prev) => ({ ...prev, [room]: !prev[room] }));
-  };
-  const toggleCurtains = () => {
-    setPartyMode(false);
-    setActiveScene(null);
-    setCurtainsOpen((prev) => !prev);
-  };
-  const toggleAc = () => {
-    setPartyMode(false);
-    setActiveScene(null);
-    setAcOn((prev) => !prev);
-  };
-  const toggleDoorLock = () => setDoorLocked((prev) => !prev);
-  const toggleCctv = () => setCctvActive((prev) => !prev);
-  const toggleTheater = () => {
-    setPartyMode(false);
-    setActiveScene(null);
-    setTheaterOn((prev) => !prev);
+  const toggleParking = () => {
+    const newState = !parkingOn;
+    setParkingOn(newState);
+    showToastMessage(newState ? '🚗 Parking Lights Activated' : '🛑 Parking Lights Deactivated');
   };
 
-  // ----- Animation variants -----
-  const curtainVariants = {
-    open: { x: 0, opacity: 1 },
-    closed: { x: 30, opacity: 0 },
-  };
-  const lockVariants = {
-    locked: { rotate: 0 },
-    unlocked: { rotate: [0, -10, 10, -5, 0], transition: { duration: 0.5 } },
+  const masterAllLights = () => {
+    const bothCurrentlyOn = balconyOn && parkingOn;
+    if (bothCurrentlyOn) {
+      setBalconyOn(false);
+      setParkingOn(false);
+      showToastMessage('🌑 All Lights Deactivated · System Standby');
+    } else {
+      setBalconyOn(true);
+      setParkingOn(true);
+      showToastMessage('💡 All Lights Activated · Full Brilliance');
+    }
   };
 
+  // Determine system active / standby
+  const isAnyLightActive = balconyOn || parkingOn;
+
+  // Scene hint text
+  let sceneHint = 'dusk silhouette';
+  if (balconyOn && parkingOn) sceneHint = '✨ panorama glow';
+  else if (balconyOn) sceneHint = '🌙 terrace aura';
+  else if (parkingOn) sceneHint = '🚘 arrival mode';
+
+  // ---------- Render ----------
   return (
-    <section className="py-16 sm:py-24 bg-gradient-to-br from-black via-gray-950 to-black text-white overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-3xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-white to-amber-200 bg-clip-text text-transparent"
-          >
-            Experience the Future of Smart Living
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            className="text-gray-400 text-base sm:text-lg mt-4 max-w-2xl mx-auto"
-          >
-            Control your entire home with a single touch. See how smart automation transforms everyday living.
-          </motion.p>
-        </div>
+    <div style={{ width: '100%' }}>
+      {/* Embedded styles (same as original, adapted for React) */}
+      <style>{`
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          -webkit-tap-highlight-color: transparent;
+        }
 
-        {/* Main 2-Column Layout */}
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          {/* LEFT: Control Panel */}
-          <div className="lg:w-2/5">
-            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-2xl">
-              <h3 className="text-xl font-semibold flex items-center gap-2 text-amber-400 mb-6">
-                <Wifi className="w-5 h-5" /> Smart Control Hub
-              </h3>
+        .abhee-smart-home {
+          background: radial-gradient(circle at 20% 30%, #0B0C10, #030507);
+          font-family: system-ui, -apple-system, 'SF Pro Text', 'SF Pro Display', 'Inter', 'BlinkMacSystemFont', 'Segoe UI', Roboto, Helvetica, sans-serif;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 1.5rem;
+        }
 
-              {/* Scene Modes */}
-              <div className="mb-8">
-                <p className="text-sm text-gray-400 mb-3">One‑Tap Scenes</p>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {[
-                    { icon: Sun, label: 'Morning', action: activateMorning, color: 'from-amber-500/20' },
-                    { icon: Moon, label: 'Night', action: activateNight, color: 'from-blue-500/20' },
-                    { icon: Film, label: 'Movie', action: activateMovie, color: 'from-purple-500/20' },
-                    { icon: LogOut, label: 'Away', action: activateAway, color: 'from-red-500/20' },
-                    { icon: Music, label: 'Party', action: activateParty, color: 'from-pink-500/20' },
-                  ].map((scene) => (
-                    <motion.button
-                      key={scene.label}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={scene.action}
-                      className={`flex flex-col items-center gap-1 p-2 rounded-xl bg-gradient-to-br ${scene.color} to-transparent border ${
-                        activeScene === scene.label.toLowerCase()
-                          ? 'border-amber-400 shadow-lg shadow-amber-500/20'
-                          : 'border-white/10 hover:border-amber-400/50'
-                      } transition-all`}
-                    >
-                      <scene.icon className="w-5 h-5 text-amber-300" />
-                      <span className="text-xs font-medium">{scene.label}</span>
-                    </motion.button>
-                  ))}
-                </div>
+        .showcase-container {
+          max-width: 1440px;
+          width: 100%;
+          margin: 0 auto;
+          background: rgba(15, 20, 28, 0.55);
+          backdrop-filter: blur(12px);
+          border-radius: 2.5rem;
+          box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .dashboard {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+
+        .house-preview {
+          flex: 1.4;
+          min-width: 260px;
+          padding: 2rem 1.8rem 2rem 2rem;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .preview-header {
+          margin-bottom: 1.5rem;
+        }
+
+        .preview-header h2 {
+          font-size: 1.7rem;
+          font-weight: 600;
+          letter-spacing: -0.3px;
+          background: linear-gradient(135deg, #FFFFFF 30%, #A0B0C5 80%);
+          background-clip: text;
+          -webkit-background-clip: text;
+          color: transparent;
+          margin-bottom: 0.25rem;
+        }
+
+        .preview-sub {
+          font-size: 0.85rem;
+          color: #8E9Aaf;
+          font-weight: 450;
+          letter-spacing: 0.2px;
+        }
+
+        .house-stage {
+          position: relative;
+          width: 100%;
+          border-radius: 2rem;
+          overflow: hidden;
+          box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          background: #010205;
+        }
+
+        .base-house {
+          display: block;
+          width: 100%;
+          height: auto;
+          pointer-events: none;
+          user-select: none;
+          border-radius: 1.8rem;
+        }
+
+        .light-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          pointer-events: none;
+          transition: opacity 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+          will-change: opacity;
+          border-radius: 1.8rem;
+        }
+
+        .overlay-bal { z-index: 10; }
+        .overlay-parking { z-index: 11; }
+        .overlay-allon { z-index: 12; }
+
+        .control-panel {
+          flex: 1;
+          min-width: 320px;
+          background: rgba(12, 18, 26, 0.7);
+          backdrop-filter: blur(20px);
+          border-left: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 2rem;
+          margin: 1.5rem;
+          padding: 1.8rem 1.8rem 2rem;
+          box-shadow: -8px 0 25px -15px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-title {
+          font-size: 1.4rem;
+          font-weight: 590;
+          letter-spacing: -0.2px;
+          color: #F0F3FA;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .panel-title span {
+          background: rgba(255, 255, 255, 0.08);
+          padding: 4px 12px;
+          border-radius: 40px;
+          font-size: 0.7rem;
+          font-weight: 500;
+          color: #B6C8E5;
+        }
+
+        .control-group {
+          display: flex;
+          flex-direction: column;
+          gap: 1.2rem;
+          margin: 1.8rem 0 2rem;
+        }
+
+        .light-card {
+          background: rgba(20, 28, 38, 0.65);
+          border-radius: 1.5rem;
+          padding: 0.9rem 1.2rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          transition: all 0.2s;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.3);
+        }
+
+        .light-card:hover {
+          background: rgba(28, 38, 52, 0.8);
+          border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .light-info {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+        }
+
+        .light-name {
+          font-weight: 590;
+          font-size: 1.1rem;
+          color: #F3F6FE;
+          letter-spacing: -0.2px;
+        }
+
+        .status-badge-mini {
+          font-size: 0.7rem;
+          font-weight: 500;
+          padding: 0.2rem 0.6rem;
+          border-radius: 30px;
+          background: rgba(0, 0, 0, 0.4);
+          width: fit-content;
+          color: #B4C6F0;
+        }
+
+        .luxury-toggle {
+          background: rgba(18, 24, 32, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 2rem;
+          padding: 0.55rem 1.4rem;
+          font-size: 0.85rem;
+          font-weight: 570;
+          color: #CCDDFF;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          backdrop-filter: blur(4px);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          min-width: 94px;
+          letter-spacing: 0.2px;
+        }
+
+        .luxury-toggle.active {
+          background: #2C6E9E;
+          border-color: #6bb9ff;
+          color: white;
+          box-shadow: 0 0 8px rgba(60, 150, 230, 0.5);
+        }
+
+        .luxury-toggle:active {
+          transform: scale(0.97);
+        }
+
+        .all-btn {
+          background: linear-gradient(95deg, #1F2A3A, #11161F);
+          width: 100%;
+          justify-content: center;
+          margin-top: 0.4rem;
+          font-weight: 600;
+          font-size: 1rem;
+          padding: 0.8rem;
+        }
+
+        .status-dashboard {
+          background: rgba(8, 12, 18, 0.6);
+          border-radius: 1.5rem;
+          padding: 1rem 1.2rem;
+          margin-top: 1.4rem;
+          border: 0.5px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .badge-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          flex-wrap: wrap;
+          gap: 0.9rem;
+          margin-bottom: 1rem;
+        }
+
+        .badge-item {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          font-size: 0.85rem;
+          font-weight: 490;
+        }
+
+        .badge-label {
+          color: #8695AA;
+        }
+
+        .badge-value {
+          font-weight: 600;
+          padding: 0.2rem 0.7rem;
+          border-radius: 20px;
+          background: rgba(0, 0, 0, 0.5);
+          font-size: 0.75rem;
+          letter-spacing: 0.3px;
+        }
+
+        .badge-value.online {
+          color: #8BFFB0;
+          background: rgba(70, 200, 110, 0.12);
+          border-left: 2px solid #4cd964;
+        }
+
+        .badge-value.offline {
+          color: #FF9E8F;
+          background: rgba(255, 80, 70, 0.08);
+        }
+
+        .badge-value.active {
+          color: #C0E0FF;
+          background: rgba(66, 153, 225, 0.2);
+        }
+
+        .badge-value.standby {
+          color: #A0AEC0;
+        }
+
+        .toast-message {
+          position: fixed;
+          bottom: 2rem;
+          left: 50%;
+          transform: translateX(-50%) translateY(20px);
+          background: rgba(25, 32, 45, 0.95);
+          backdrop-filter: blur(18px);
+          color: white;
+          padding: 0.9rem 1.8rem;
+          border-radius: 60px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          letter-spacing: 0.2px;
+          box-shadow: 0 12px 28px -8px black;
+          z-index: 1000;
+          opacity: 0;
+          transition: opacity 0.28s ease, transform 0.3s ease;
+          pointer-events: none;
+          border: 1px solid rgba(255,255,240,0.2);
+          font-family: inherit;
+        }
+
+        .toast-message.show {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 860px) {
+          .abhee-smart-home { padding: 1rem; }
+          .dashboard { flex-direction: column; }
+          .control-panel {
+            margin: 1rem;
+            border-left: none;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1.8rem;
+          }
+          .house-preview { padding: 1.2rem; }
+          .light-card { padding: 0.8rem 1rem; }
+        }
+
+        @media (max-width: 480px) {
+          .badge-row { flex-direction: column; gap: 0.5rem; }
+          .luxury-toggle { padding: 0.5rem 1rem; }
+        }
+
+        img { user-select: none; -webkit-user-drag: none; }
+      `}</style>
+
+      <div className="abhee-smart-home">
+        <div className="showcase-container">
+          <div className="dashboard">
+            {/* LEFT: Fixed House Preview */}
+            <div className="house-preview">
+              <div className="preview-header">
+                <h2>✦ Abhee Lumina Villa</h2>
+                <div className="preview-sub">Ambient Intelligence | Live lighting orchestration</div>
               </div>
-
-              {/* Quick Controls */}
-              <div className="space-y-4">
-                <p className="text-sm text-gray-400">Individual Devices</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <ControlButton icon={Lightbulb} label="Living Light" active={lights.living} onClick={() => toggleLight('living')} />
-                  <ControlButton icon={Lightbulb} label="Bedroom Light" active={lights.bedroom} onClick={() => toggleLight('bedroom')} />
-                  <ControlButton icon={Lightbulb} label="Kitchen Light" active={lights.kitchen} onClick={() => toggleLight('kitchen')} />
-                  <ControlButton icon={Lightbulb} label="Hall Light" active={lights.hall} onClick={() => toggleLight('hall')} />
-                  <ControlButton  icon={Blinds}  label="Curtains"  active={curtainsOpen}  onClick={toggleCurtains}  activeLabel="Open"  inactiveLabel="Closed"/>
-                  <ControlButton icon={Wind} label="AC" active={acOn} onClick={toggleAc} />
-                  <ControlButton icon={Lock} label="Door Lock" active={doorLocked} onClick={toggleDoorLock} activeLabel="Locked" inactiveLabel="Unlocked" />
-                  <ControlButton icon={Camera} label="CCTV" active={cctvActive} onClick={toggleCctv} />
-                  <ControlButton icon={Tv} label="Home Theater" active={theaterOn} onClick={toggleTheater} />
-                </div>
-              </div>
-
-              {/* AC Temperature Control */}
-              <div className="mt-6 pt-4 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Thermometer className="w-5 h-5 text-cyan-400" />
-                    <span className="text-sm">AC Temperature</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setAcTemp((t) => Math.max(16, t - 1))}
-                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
-                    >
-                      -
-                    </button>
-                    <span className="text-2xl font-light w-12 text-center">{acTemp}°</span>
-                    <button
-                      onClick={() => setAcTemp((t) => Math.min(30, t + 1))}
-                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-                {acOn && (
-                  <div className="mt-3 h-1 w-full bg-gray-700 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-cyan-400 to-cyan-600"
-                      animate={{ width: `${((acTemp - 16) / 14) * 100}%` }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </div>
-                )}
+              <div className="house-stage">
+                {/* Base layer: always visible */}
+                <img
+                  className="base-house"
+                  src="../images/alllightoff.png"
+                  alt="smart home base architecture"
+                />
+                {/* Overlay layers – IDs used by useEffect */}
+                <img
+                  id="balconyOverlay"
+                  className="light-overlay overlay-bal"
+                  src="../images/bal.png"
+                  alt="balcony light effect"
+                  style={{ opacity: 0 }}
+                />
+                <img
+                  id="parkingOverlay"
+                  className="light-overlay overlay-parking"
+                  src="../images/parking.png"
+                  alt="parking light effect"
+                  style={{ opacity: 0 }}
+                />
+                <img
+                  id="allOnOverlay"
+                  className="light-overlay overlay-allon"
+                  src="../images/alllighton.png"
+                  alt="all lights combined effect"
+                  style={{ opacity: 0 }}
+                />
               </div>
             </div>
-          </div>
 
-          {/* RIGHT: Interactive House Visualization */}
-          <div className="lg:w-3/5">
-            <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-5 sm:p-6 overflow-hidden">
-              {/* Party Mode dynamic overlay */}
-              {partyMode && (
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  animate={{ backgroundColor: [partyColor + '20', partyColor + '40', partyColor + '20'] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                />
-              )}
-
-              <h3 className="text-xl font-semibold flex items-center gap-2 mb-6">
-                <Home className="w-5 h-5 text-amber-400" /> Interactive Home Visualizer
-              </h3>
-
-              {/* Rooms Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                <RoomCard
-                  name="Living Room"
-                  icon={<Sofa size={20} />}
-                  lightOn={lights.living}
-                  hasCurtain
-                  curtainOpen={curtainsOpen}
-                  acOn={acOn}
-                  onToggleLight={() => toggleLight('living')}
-                />
-                <RoomCard
-                  name="Bedroom"
-                  icon={<BedDouble size={20} />}
-                  lightOn={lights.bedroom}
-                  hasCurtain
-                  curtainOpen={curtainsOpen}
-                  acOn={acOn}
-                  onToggleLight={() => toggleLight('bedroom')}
-                />
-                <RoomCard
-                  name="Kitchen"
-                  icon={<Utensils size={20} />}
-                  lightOn={lights.kitchen}
-                  onToggleLight={() => toggleLight('kitchen')}
-                />
-                <RoomCard
-                  name="Home Theater"
-                  icon={<Clapperboard size={20} />}
-                  lightOn={theaterOn}
-                  hasCurtain
-                  curtainOpen={curtainsOpen}
-                  onToggleLight={() => setTheaterOn(!theaterOn)}
-                />
-                <RoomCard
-                  name="Main Hall"
-                  icon={<Home size={20} />}
-                  lightOn={lights.hall}
-                  hasCurtain
-                  curtainOpen={curtainsOpen}
-                  onToggleLight={() => toggleLight('hall')}
-                />
+            {/* RIGHT: Control Panel */}
+            <div className="control-panel">
+              <div className="panel-title">
+                Light Concierge
+                <span>LUXE</span>
               </div>
-
-              {/* Status Indicators & Animations */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-white/10">
-                {/* Curtain Animation */}
-                <div className="flex flex-col items-center p-3 rounded-xl bg-white/5">
-                  <div className="flex gap-1">
-                    <motion.div variants={curtainVariants} animate={curtainsOpen ? 'open' : 'closed'} className="w-4 h-8 bg-amber-600/50 rounded-sm" />
-                    <motion.div variants={curtainVariants} animate={curtainsOpen ? 'open' : 'closed'} className="w-4 h-8 bg-amber-600/50 rounded-sm" />
+              <div className="control-group">
+                {/* Balcony Control */}
+                <div className="light-card">
+                  <div className="light-info">
+                    <div className="light-name">🌿 Balcony Illumination</div>
+                    <div className="status-badge-mini">
+                      {balconyOn ? '● Illuminated' : 'Standby mode'}
+                    </div>
                   </div>
-                  <span className="text-xs mt-1 text-gray-400">Curtains {curtainsOpen ? 'Open' : 'Closed'}</span>
-                </div>
-
-                {/* AC Airflow Animation */}
-                <div className="flex flex-col items-center p-3 rounded-xl bg-white/5">
-                  <div className="relative">
-                    <Wind className={`w-6 h-6 ${acOn ? 'text-cyan-400' : 'text-gray-500'}`} />
-                    {acOn && (
-                      <>
-                        <motion.div
-                          className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full"
-                          animate={{ scale: acCooling ? [1, 2] : 1, opacity: acCooling ? 1 : 0 }}
-                          transition={{ duration: 0.6 }}
-                        />
-                        <motion.div
-                          className="absolute -bottom-1 -left-1 w-2 h-2 bg-cyan-400 rounded-full"
-                          animate={{ scale: acCooling ? [1, 1.5] : 1, opacity: acCooling ? 0.6 : 0 }}
-                          transition={{ duration: 0.6, delay: 0.3 }}
-                        />
-                      </>
-                    )}
-                  </div>
-                  <span className="text-xs mt-1">{acOn ? `${acTemp}°C · Cooling` : 'AC Off'}</span>
-                </div>
-
-                {/* Door Lock Animation */}
-                <div className="flex flex-col items-center p-3 rounded-xl bg-white/5">
-                  <motion.div
-                    variants={lockVariants}
-                    animate={doorLocked ? 'locked' : 'unlocked'}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={toggleDoorLock}
-                    className="cursor-pointer"
+                  <button
+                    className={`luxury-toggle ${balconyOn ? 'active' : ''}`}
+                    onClick={toggleBalcony}
                   >
-                    {doorLocked ? <Lock className="w-6 h-6 text-amber-400" /> : <Unlock className="w-6 h-6 text-green-400" />}
-                  </motion.div>
-                  <span className="text-xs mt-1">{doorLocked ? 'Secured' : 'Unlocked'}</span>
+                    {balconyOn ? 'ON' : 'OFF'}
+                  </button>
                 </div>
 
-                {/* CCTV Active Indicator */}
-                <div className="flex flex-col items-center p-3 rounded-xl bg-white/5">
-                  <div className="relative">
-                    <Camera className={`w-6 h-6 ${cctvActive ? 'text-red-500' : 'text-gray-500'}`} />
-                    {cctvActive && (
-                      <motion.div
-                        className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"
-                        animate={{ scale: [1, 1.5, 1] }}
-                        transition={{ repeat: Infinity, duration: 1.2 }}
-                      />
-                    )}
+                {/* Parking Control */}
+                <div className="light-card">
+                  <div className="light-info">
+                    <div className="light-name">🚗 Parking Portal</div>
+                    <div className="status-badge-mini">
+                      {parkingOn ? '⚡ Active' : 'Inactive'}
+                    </div>
                   </div>
-                  <span className="text-xs mt-1">CCTV {cctvActive ? 'Recording' : 'Off'}</span>
+                  <button
+                    className={`luxury-toggle ${parkingOn ? 'active' : ''}`}
+                    onClick={toggleParking}
+                  >
+                    {parkingOn ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+
+                {/* All Lights Master */}
+                <div className="light-card" style={{ background: 'rgba(30,40,54,0.75)', marginTop: '0.2rem' }}>
+                  <div className="light-info">
+                    <div className="light-name">✨ All Lights · Master Scene</div>
+                    <div className="status-badge-mini">whole property</div>
+                  </div>
+                  <button className="luxury-toggle all-btn" onClick={masterAllLights}>
+                    {balconyOn && parkingOn ? 'ALL OFF' : 'ALL ON'}
+                  </button>
                 </div>
               </div>
 
-              {/* Special Effects for Movie Mode */}
-              {activeScene === 'movie' && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
-                  <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-purple-900/30 to-transparent" />
-                  <motion.div
-                    className="absolute top-1/4 left-1/4 w-32 h-32 bg-amber-400/20 rounded-full blur-3xl"
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  />
+              {/* Status Dashboard */}
+              <div className="status-dashboard">
+                <div className="badge-row">
+                  <div className="badge-item">
+                    <span className="badge-label">🏡 Balcony</span>
+                    <span className={`badge-value ${balconyOn ? 'online' : 'offline'}`}>
+                      {balconyOn ? 'ONLINE' : 'OFFLINE'}
+                    </span>
+                  </div>
+                  <div className="badge-item">
+                    <span className="badge-label">🅿️ Parking</span>
+                    <span className={`badge-value ${parkingOn ? 'online' : 'offline'}`}>
+                      {parkingOn ? 'ONLINE' : 'OFFLINE'}
+                    </span>
+                  </div>
                 </div>
-              )}
+                <div className="badge-row">
+                  <div className="badge-item">
+                    <span className="badge-label">⚙️ System Core</span>
+                    <span className={`badge-value ${isAnyLightActive ? 'active' : 'standby'}`}>
+                      {isAnyLightActive ? 'ACTIVE' : 'STANDBY'}
+                    </span>
+                  </div>
+                  <div className="badge-item">
+                    <span className="badge-label">🌙 Live Scene</span>
+                    <span style={{ fontSize: '0.7rem', color: '#8DA3C0' }}>{sceneHint}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Micro‑interaction: active scene badge */}
-        {activeScene && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8 text-center"
-          >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm">
-              <Sparkles size={14} />
-              {activeScene.charAt(0).toUpperCase() + activeScene.slice(1)} Mode Active
-              {activeScene === 'party' && <Disc size={14} className="animate-spin" />}
-            </span>
-          </motion.div>
-        )}
+        {/* Toast Notification */}
+        <div className={`toast-message ${showToast ? 'show' : ''}`}>{toastMessage}</div>
       </div>
-    </section>
+    </div>
   );
 };
 
-// --- Reusable Control Button Component ---
-interface ControlButtonProps {
-  icon: React.ElementType;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  activeLabel?: string;
-  inactiveLabel?: string;
-}
-const ControlButton: React.FC<ControlButtonProps> = ({ icon: Icon, label, active, onClick, activeLabel, inactiveLabel }) => {
-  return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={`flex items-center justify-between p-2 rounded-xl transition-all ${
-        active ? 'bg-amber-500/20 border border-amber-500/50 shadow-glow' : 'bg-white/5 border border-white/10 hover:border-amber-500/30'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <Icon className={`w-4 h-4 ${active ? 'text-amber-400' : 'text-gray-400'}`} />
-        <span className="text-xs font-medium">{label}</span>
-      </div>
-      <span className={`text-xs ${active ? 'text-amber-400' : 'text-gray-500'}`}>
-        {active ? (activeLabel || 'ON') : (inactiveLabel || 'OFF')}
-      </span>
-    </motion.button>
-  );
-};
-
-export default SmartHomeExperience;
+export default AbheeSmartHome;
