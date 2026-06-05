@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const AbheeSmartHome = () => {
-  // ---------- State ----------
+  // ---------- State for all 10 lights ----------
   const [balconyOn, setBalconyOn] = useState(false);
   const [parkingOn, setParkingOn] = useState(false);
+  const [entranceOn, setEntranceOn] = useState(false);
+  const [gardenOn, setGardenOn] = useState(false);
+  const [poolOn, setPoolOn] = useState(false);
+  const [livingRoomOn, setLivingRoomOn] = useState(false);
+  const [bedroomOn, setBedroomOn] = useState(false);
+  const [diningOn, setDiningOn] = useState(false);
+  const [theaterOn, setTheaterOn] = useState(false);
+  const [securityOn, setSecurityOn] = useState(false);
+
+  // Toast state
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const toastTimerRef = useRef(null);
 
-  // ---------- Helper: Show Toast ----------
+  // Helper: Show toast notification
   const showToastMessage = (message) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToastMessage(message);
@@ -18,79 +28,171 @@ const AbheeSmartHome = () => {
     }, 2400);
   };
 
+  // Helper: get all light states as an object
+  const getAllLights = () => ({
+    balcony: balconyOn,
+    parking: parkingOn,
+    entrance: entranceOn,
+    garden: gardenOn,
+    pool: poolOn,
+    livingRoom: livingRoomOn,
+    bedroom: bedroomOn,
+    dining: diningOn,
+    theater: theaterOn,
+    security: securityOn,
+  });
+
+  // Count active lights
+  const activeCount = Object.values(getAllLights()).filter(Boolean).length;
+  const allLightsOn = activeCount === 10;
+
+  // Scene hint text (based on which lights are on)
+  const getSceneHint = () => {
+    if (allLightsOn) return '✨ full brilliance';
+    if (activeCount === 0) return 'dusk silhouette';
+    if (livingRoomOn && theaterOn && !bedroomOn) return '🎬 cinema mood';
+    if (livingRoomOn && diningOn && gardenOn) return '🍷 dinner party';
+    if (bedroomOn && securityOn && !livingRoomOn) return '🌙 good night';
+    return 'ambient zones';
+  };
+
   // ---------- Lighting Logic (opacity transitions, no image swap) ----------
   useEffect(() => {
-    // Get overlay elements (will be available after render)
+    // Get all overlay elements
     const balconyOverlay = document.getElementById('balconyOverlay');
     const parkingOverlay = document.getElementById('parkingOverlay');
+    const entranceOverlay = document.getElementById('entranceOverlay');
+    const gardenOverlay = document.getElementById('gardenOverlay');
+    const poolOverlay = document.getElementById('poolOverlay');
+    const livingRoomOverlay = document.getElementById('livingRoomOverlay');
+    const bedroomOverlay = document.getElementById('bedroomOverlay');
+    const diningOverlay = document.getElementById('diningOverlay');
+    const theaterOverlay = document.getElementById('theaterOverlay');
+    const securityOverlay = document.getElementById('securityOverlay');
     const allOnOverlay = document.getElementById('allOnOverlay');
-    if (!balconyOverlay) return;
 
-    if (balconyOn && parkingOn) {
-      // Both ON → show alllighton.png
-      balconyOverlay.style.opacity = '0';
-      parkingOverlay.style.opacity = '0';
+    if (!balconyOverlay) return; // DOM not ready
+
+    if (allLightsOn) {
+      // ALL lights ON → show alllighton.png, hide every individual overlay
       allOnOverlay.style.opacity = '1';
-    } else if (balconyOn && !parkingOn) {
-      // Only balcony
-      balconyOverlay.style.opacity = '1';
-      parkingOverlay.style.opacity = '0';
-      allOnOverlay.style.opacity = '0';
-    } else if (!balconyOn && parkingOn) {
-      // Only parking
       balconyOverlay.style.opacity = '0';
-      parkingOverlay.style.opacity = '1';
-      allOnOverlay.style.opacity = '0';
+      parkingOverlay.style.opacity = '0';
+      entranceOverlay.style.opacity = '0';
+      gardenOverlay.style.opacity = '0';
+      poolOverlay.style.opacity = '0';
+      livingRoomOverlay.style.opacity = '0';
+      bedroomOverlay.style.opacity = '0';
+      diningOverlay.style.opacity = '0';
+      theaterOverlay.style.opacity = '0';
+      securityOverlay.style.opacity = '0';
     } else {
-      // Both OFF
-      balconyOverlay.style.opacity = '0';
-      parkingOverlay.style.opacity = '0';
+      // Otherwise show/hide each overlay based on its state
       allOnOverlay.style.opacity = '0';
+      balconyOverlay.style.opacity = balconyOn ? '1' : '0';
+      parkingOverlay.style.opacity = parkingOn ? '1' : '0';
+      entranceOverlay.style.opacity = entranceOn ? '1' : '0';
+      gardenOverlay.style.opacity = gardenOn ? '1' : '0';
+      poolOverlay.style.opacity = poolOn ? '1' : '0';
+      livingRoomOverlay.style.opacity = livingRoomOn ? '1' : '0';
+      bedroomOverlay.style.opacity = bedroomOn ? '1' : '0';
+      diningOverlay.style.opacity = diningOn ? '1' : '0';
+      theaterOverlay.style.opacity = theaterOn ? '1' : '0';
+      securityOverlay.style.opacity = securityOn ? '1' : '0';
     }
-  }, [balconyOn, parkingOn]);
+  }, [
+    balconyOn, parkingOn, entranceOn, gardenOn, poolOn,
+    livingRoomOn, bedroomOn, diningOn, theaterOn, securityOn, allLightsOn
+  ]);
 
-  // ---------- UI Updates for Badges & Button Labels ----------
-  // (Reactive – they derive from state directly in JSX, no extra effect needed)
-
-  // ---------- Event Handlers ----------
+  // ---------- Toggle Handlers with toast messages ----------
   const toggleBalcony = () => {
     const newState = !balconyOn;
     setBalconyOn(newState);
     showToastMessage(newState ? '✨ Balcony Lights Activated' : '🌙 Balcony Lights Deactivated');
   };
-
   const toggleParking = () => {
     const newState = !parkingOn;
     setParkingOn(newState);
     showToastMessage(newState ? '🚗 Parking Lights Activated' : '🛑 Parking Lights Deactivated');
   };
+  const toggleEntrance = () => {
+    const newState = !entranceOn;
+    setEntranceOn(newState);
+    showToastMessage(newState ? '🚪 Entrance Lights Activated' : '🌙 Entrance Lights Deactivated');
+  };
+  const toggleGarden = () => {
+    const newState = !gardenOn;
+    setGardenOn(newState);
+    showToastMessage(newState ? '🌳 Garden Lights Activated' : '🌙 Garden Lights Deactivated');
+  };
+  const togglePool = () => {
+    const newState = !poolOn;
+    setPoolOn(newState);
+    showToastMessage(newState ? '🏊 Pool Lights Activated' : '🌙 Pool Lights Deactivated');
+  };
+  const toggleLivingRoom = () => {
+    const newState = !livingRoomOn;
+    setLivingRoomOn(newState);
+    showToastMessage(newState ? '🛋 Living Room Lights Activated' : '🌙 Living Room Lights Deactivated');
+  };
+  const toggleBedroom = () => {
+    const newState = !bedroomOn;
+    setBedroomOn(newState);
+    showToastMessage(newState ? '🛏 Bedroom Lights Activated' : '🌙 Bedroom Lights Deactivated');
+  };
+  const toggleDining = () => {
+    const newState = !diningOn;
+    setDiningOn(newState);
+    showToastMessage(newState ? '🍽 Dining Lights Activated' : '🌙 Dining Lights Deactivated');
+  };
+  const toggleTheater = () => {
+    const newState = !theaterOn;
+    setTheaterOn(newState);
+    showToastMessage(newState ? '🎬 Home Theater Activated' : '🌙 Home Theater Deactivated');
+  };
+  const toggleSecurity = () => {
+    const newState = !securityOn;
+    setSecurityOn(newState);
+    showToastMessage(newState ? '🔒 Security Lights Activated' : '🌙 Security Lights Deactivated');
+  };
 
+  // Master All Lights: turn all ON or all OFF
   const masterAllLights = () => {
-    const bothCurrentlyOn = balconyOn && parkingOn;
-    if (bothCurrentlyOn) {
+    if (allLightsOn) {
       setBalconyOn(false);
       setParkingOn(false);
+      setEntranceOn(false);
+      setGardenOn(false);
+      setPoolOn(false);
+      setLivingRoomOn(false);
+      setBedroomOn(false);
+      setDiningOn(false);
+      setTheaterOn(false);
+      setSecurityOn(false);
       showToastMessage('🌑 All Lights Deactivated · System Standby');
     } else {
       setBalconyOn(true);
       setParkingOn(true);
-      showToastMessage('💡 All Lights Activated · Full Brilliance');
+      setEntranceOn(true);
+      setGardenOn(true);
+      setPoolOn(true);
+      setLivingRoomOn(true);
+      setBedroomOn(true);
+      setDiningOn(true);
+      setTheaterOn(true);
+      setSecurityOn(true);
+      showToastMessage('✨ All Lights Activated · Full Brilliance');
     }
   };
 
-  // Determine system active / standby
-  const isAnyLightActive = balconyOn || parkingOn;
-
-  // Scene hint text
-  let sceneHint = 'dusk silhouette';
-  if (balconyOn && parkingOn) sceneHint = '✨ panorama glow';
-  else if (balconyOn) sceneHint = '🌙 terrace aura';
-  else if (parkingOn) sceneHint = '🚘 arrival mode';
+  // System status badge
+  const systemStatus = activeCount > 0 ? 'ACTIVE' : 'STANDBY';
+  const sceneHint = getSceneHint();
 
   // ---------- Render ----------
   return (
     <div style={{ width: '100%' }}>
-      {/* Embedded styles (same as original, adapted for React) */}
       <style>{`
         * {
           margin: 0;
@@ -101,7 +203,7 @@ const AbheeSmartHome = () => {
 
         .abhee-smart-home {
           background: radial-gradient(circle at 20% 30%, #0B0C10, #030507);
-          font-family: system-ui, -apple-system, 'SF Pro Text', 'SF Pro Display', 'Inter', 'BlinkMacSystemFont', 'Segoe UI', Roboto, Helvetica, sans-serif;
+          font-family: system-ui, -apple-system, 'SF Pro Text', 'SF Pro Display', 'Inter', sans-serif;
           min-height: 100vh;
           display: flex;
           align-items: center;
@@ -118,7 +220,6 @@ const AbheeSmartHome = () => {
           border-radius: 2.5rem;
           box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
           overflow: hidden;
-          transition: all 0.3s ease;
         }
 
         .dashboard {
@@ -129,10 +230,8 @@ const AbheeSmartHome = () => {
 
         .house-preview {
           flex: 1.4;
-          min-width: 260px;
+          min-width: 280px;
           padding: 2rem 1.8rem 2rem 2rem;
-          display: flex;
-          flex-direction: column;
         }
 
         .preview-header {
@@ -142,19 +241,15 @@ const AbheeSmartHome = () => {
         .preview-header h2 {
           font-size: 1.7rem;
           font-weight: 600;
-          letter-spacing: -0.3px;
           background: linear-gradient(135deg, #FFFFFF 30%, #A0B0C5 80%);
           background-clip: text;
           -webkit-background-clip: text;
           color: transparent;
-          margin-bottom: 0.25rem;
         }
 
         .preview-sub {
           font-size: 0.85rem;
           color: #8E9Aaf;
-          font-weight: 450;
-          letter-spacing: 0.2px;
         }
 
         .house-stage {
@@ -162,7 +257,7 @@ const AbheeSmartHome = () => {
           width: 100%;
           border-radius: 2rem;
           overflow: hidden;
-          box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
           background: #010205;
         }
 
@@ -171,7 +266,6 @@ const AbheeSmartHome = () => {
           width: 100%;
           height: auto;
           pointer-events: none;
-          user-select: none;
           border-radius: 1.8rem;
         }
 
@@ -184,30 +278,28 @@ const AbheeSmartHome = () => {
           object-fit: contain;
           pointer-events: none;
           transition: opacity 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-          will-change: opacity;
+          opacity: 0;
           border-radius: 1.8rem;
         }
 
-        .overlay-bal { z-index: 10; }
-        .overlay-parking { z-index: 11; }
-        .overlay-allon { z-index: 12; }
+        .overlay-all { z-index: 50; }
+        .overlay-normal { z-index: 10; }
 
         .control-panel {
           flex: 1;
-          min-width: 320px;
+          min-width: 340px;
           background: rgba(12, 18, 26, 0.7);
           backdrop-filter: blur(20px);
           border-left: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 2rem;
           margin: 1.5rem;
-          padding: 1.8rem 1.8rem 2rem;
+          padding: 1.8rem;
           box-shadow: -8px 0 25px -15px rgba(0, 0, 0, 0.3);
         }
 
         .panel-title {
           font-size: 1.4rem;
           font-weight: 590;
-          letter-spacing: -0.2px;
           color: #F0F3FA;
           margin-bottom: 1rem;
           display: flex;
@@ -220,150 +312,111 @@ const AbheeSmartHome = () => {
           padding: 4px 12px;
           border-radius: 40px;
           font-size: 0.7rem;
-          font-weight: 500;
           color: #B6C8E5;
         }
 
-        .control-group {
-          display: flex;
-          flex-direction: column;
-          gap: 1.2rem;
-          margin: 1.8rem 0 2rem;
+        .section-title {
+          font-size: 0.85rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          font-weight: 600;
+          color: #B8C6F0;
+          margin: 1rem 0 0.8rem 0;
+        }
+
+        .controls-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 0.9rem;
+          margin-bottom: 0.5rem;
         }
 
         .light-card {
           background: rgba(20, 28, 38, 0.65);
           border-radius: 1.5rem;
-          padding: 0.9rem 1.2rem;
+          padding: 0.7rem 1rem;
           display: flex;
           align-items: center;
           justify-content: space-between;
           transition: all 0.2s;
           border: 1px solid rgba(255, 255, 255, 0.05);
-          box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.3);
+          cursor: pointer;
         }
 
         .light-card:hover {
-          background: rgba(28, 38, 52, 0.8);
-          border-color: rgba(255, 255, 255, 0.12);
-        }
-
-        .light-info {
-          display: flex;
-          flex-direction: column;
-          gap: 0.2rem;
+          background: rgba(40, 55, 78, 0.85);
+          border-color: rgba(210, 180, 140, 0.35);
         }
 
         .light-name {
-          font-weight: 590;
-          font-size: 1.1rem;
-          color: #F3F6FE;
-          letter-spacing: -0.2px;
-        }
-
-        .status-badge-mini {
-          font-size: 0.7rem;
           font-weight: 500;
-          padding: 0.2rem 0.6rem;
+          font-size: 0.9rem;
+          color: #F3F6FE;
+        }
+
+        .toggle-status {
+          font-size: 0.7rem;
+          font-weight: 600;
+          padding: 0.2rem 0.7rem;
           border-radius: 30px;
-          background: rgba(0, 0, 0, 0.4);
-          width: fit-content;
-          color: #B4C6F0;
+          background: rgba(0, 0, 0, 0.5);
+          color: #B8CBF0;
         }
 
-        .luxury-toggle {
-          background: rgba(18, 24, 32, 0.9);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 2rem;
-          padding: 0.55rem 1.4rem;
-          font-size: 0.85rem;
-          font-weight: 570;
-          color: #CCDDFF;
-          cursor: pointer;
-          transition: all 0.25s ease;
-          backdrop-filter: blur(4px);
-          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-          min-width: 94px;
-          letter-spacing: 0.2px;
-        }
-
-        .luxury-toggle.active {
+        .toggle-status.active {
           background: #2C6E9E;
-          border-color: #6bb9ff;
           color: white;
-          box-shadow: 0 0 8px rgba(60, 150, 230, 0.5);
-        }
-
-        .luxury-toggle:active {
-          transform: scale(0.97);
+          box-shadow: 0 0 6px #3f9eff;
         }
 
         .all-btn {
           background: linear-gradient(95deg, #1F2A3A, #11161F);
+          border: 1px solid rgba(255, 215, 130, 0.3);
           width: 100%;
-          justify-content: center;
-          margin-top: 0.4rem;
-          font-weight: 600;
+          border-radius: 3rem;
+          padding: 0.9rem;
+          margin: 1rem 0 0.5rem;
+          font-weight: 700;
           font-size: 1rem;
-          padding: 0.8rem;
+          color: #F5E7D3;
+          cursor: pointer;
+          text-align: center;
         }
 
         .status-dashboard {
           background: rgba(8, 12, 18, 0.6);
           border-radius: 1.5rem;
-          padding: 1rem 1.2rem;
-          margin-top: 1.4rem;
-          border: 0.5px solid rgba(255, 255, 255, 0.06);
+          padding: 1rem;
+          margin-top: 1.5rem;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
         }
 
-        .badge-row {
+        .status-item {
           display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-          flex-wrap: wrap;
-          gap: 0.9rem;
-          margin-bottom: 1rem;
+          flex-direction: column;
+          gap: 0.2rem;
         }
 
-        .badge-item {
-          display: flex;
-          align-items: center;
-          gap: 0.65rem;
-          font-size: 0.85rem;
-          font-weight: 490;
+        .status-label {
+          font-size: 0.7rem;
+          color: #8C9BC2;
         }
 
-        .badge-label {
-          color: #8695AA;
+        .status-value {
+          font-weight: 650;
+          font-size: 1rem;
+          color: #F0F5FF;
         }
 
-        .badge-value {
-          font-weight: 600;
-          padding: 0.2rem 0.7rem;
-          border-radius: 20px;
-          background: rgba(0, 0, 0, 0.5);
-          font-size: 0.75rem;
-          letter-spacing: 0.3px;
-        }
-
-        .badge-value.online {
-          color: #8BFFB0;
-          background: rgba(70, 200, 110, 0.12);
-          border-left: 2px solid #4cd964;
-        }
-
-        .badge-value.offline {
-          color: #FF9E8F;
-          background: rgba(255, 80, 70, 0.08);
-        }
-
-        .badge-value.active {
-          color: #C0E0FF;
-          background: rgba(66, 153, 225, 0.2);
-        }
-
-        .badge-value.standby {
-          color: #A0AEC0;
+        .badge-active {
+          color: #A4FFC3;
+          background: rgba(70, 200, 100, 0.15);
+          padding: 0.2rem 0.6rem;
+          border-radius: 40px;
+          font-size: 0.7rem;
+          display: inline-block;
         }
 
         .toast-message {
@@ -371,21 +424,19 @@ const AbheeSmartHome = () => {
           bottom: 2rem;
           left: 50%;
           transform: translateX(-50%) translateY(20px);
-          background: rgba(25, 32, 45, 0.95);
+          background: rgba(25, 32, 45, 0.96);
           backdrop-filter: blur(18px);
           color: white;
-          padding: 0.9rem 1.8rem;
+          padding: 0.8rem 1.6rem;
           border-radius: 60px;
           font-size: 0.9rem;
           font-weight: 500;
-          letter-spacing: 0.2px;
           box-shadow: 0 12px 28px -8px black;
           z-index: 1000;
           opacity: 0;
-          transition: opacity 0.28s ease, transform 0.3s ease;
+          transition: opacity 0.25s, transform 0.3s ease;
           pointer-events: none;
-          border: 1px solid rgba(255,255,240,0.2);
-          font-family: inherit;
+          border: 1px solid rgba(255, 235, 180, 0.3);
         }
 
         .toast-message.show {
@@ -396,19 +447,12 @@ const AbheeSmartHome = () => {
         @media (max-width: 860px) {
           .abhee-smart-home { padding: 1rem; }
           .dashboard { flex-direction: column; }
-          .control-panel {
-            margin: 1rem;
-            border-left: none;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            border-radius: 1.8rem;
-          }
+          .control-panel { margin: 1rem; border-left: none; }
           .house-preview { padding: 1.2rem; }
-          .light-card { padding: 0.8rem 1rem; }
         }
 
-        @media (max-width: 480px) {
-          .badge-row { flex-direction: column; gap: 0.5rem; }
-          .luxury-toggle { padding: 0.5rem 1rem; }
+        @media (max-width: 540px) {
+          .controls-grid { grid-template-columns: 1fr; }
         }
 
         img { user-select: none; -webkit-user-drag: none; }
@@ -417,41 +461,27 @@ const AbheeSmartHome = () => {
       <div className="abhee-smart-home">
         <div className="showcase-container">
           <div className="dashboard">
-            {/* LEFT: Fixed House Preview */}
+            {/* LEFT: Fixed House Preview with all overlays */}
             <div className="house-preview">
               <div className="preview-header">
                 <h2>✦ Abhee Lumina Villa</h2>
                 <div className="preview-sub">Ambient Intelligence | Live lighting orchestration</div>
               </div>
               <div className="house-stage">
-                {/* Base layer: always visible */}
-                <img
-                  className="base-house"
-                  src="../images/alllightoff.png"
-                  alt="smart home base architecture"
-                />
-                {/* Overlay layers – IDs used by useEffect */}
-                <img
-                  id="balconyOverlay"
-                  className="light-overlay overlay-bal"
-                  src="../images/bal.png"
-                  alt="balcony light effect"
-                  style={{ opacity: 0 }}
-                />
-                <img
-                  id="parkingOverlay"
-                  className="light-overlay overlay-parking"
-                  src="../images/parking.png"
-                  alt="parking light effect"
-                  style={{ opacity: 0 }}
-                />
-                <img
-                  id="allOnOverlay"
-                  className="light-overlay overlay-allon"
-                  src="../images/alllighton.png"
-                  alt="all lights combined effect"
-                  style={{ opacity: 0 }}
-                />
+                <img className="base-house" src="../images/alllightoff.png" alt="villa base" />
+                {/* Individual overlays */}
+                <img id="balconyOverlay" className="light-overlay overlay-normal" src="../images/bal.png" alt="balcony" style={{ opacity: 0 }} />
+                <img id="parkingOverlay" className="light-overlay overlay-normal" src="../images/parking.png" alt="parking" style={{ opacity: 0 }} />
+                <img id="entranceOverlay" className="light-overlay overlay-normal" src="../images/entranceOn.png" alt="entrance" style={{ opacity: 0 }} />
+                <img id="gardenOverlay" className="light-overlay overlay-normal" src="../images/gardenOn.png" alt="garden" style={{ opacity: 0 }} />
+                <img id="poolOverlay" className="light-overlay overlay-normal" src="../images/poolOn.png" alt="pool" style={{ opacity: 0 }} />
+                <img id="livingRoomOverlay" className="light-overlay overlay-normal" src="../images/livingRoomOn.png" alt="living room" style={{ opacity: 0 }} />
+                <img id="bedroomOverlay" className="light-overlay overlay-normal" src="../images/bedroomOn.png" alt="bedroom" style={{ opacity: 0 }} />
+                <img id="diningOverlay" className="light-overlay overlay-normal" src="../images/diningOn.png" alt="dining" style={{ opacity: 0 }} />
+                <img id="theaterOverlay" className="light-overlay overlay-normal" src="../images/theaterOn.png" alt="theater" style={{ opacity: 0 }} />
+                <img id="securityOverlay" className="light-overlay overlay-normal" src="../images/securityOn.png" alt="security" style={{ opacity: 0 }} />
+                {/* Master all-light overlay (highest z-index) */}
+                <img id="allOnOverlay" className="light-overlay overlay-all" src="../images/alllighton.png" alt="all lights" style={{ opacity: 0 }} />
               </div>
             </div>
 
@@ -461,78 +491,81 @@ const AbheeSmartHome = () => {
                 Light Concierge
                 <span>LUXE</span>
               </div>
-              <div className="control-group">
-                {/* Balcony Control */}
-                <div className="light-card">
-                  <div className="light-info">
-                    <div className="light-name">🌿 Balcony Illumination</div>
-                    <div className="status-badge-mini">
-                      {balconyOn ? '● Illuminated' : 'Standby mode'}
-                    </div>
-                  </div>
-                  <button
-                    className={`luxury-toggle ${balconyOn ? 'active' : ''}`}
-                    onClick={toggleBalcony}
-                  >
-                    {balconyOn ? 'ON' : 'OFF'}
-                  </button>
-                </div>
 
-                {/* Parking Control */}
-                <div className="light-card">
-                  <div className="light-info">
-                    <div className="light-name">🚗 Parking Portal</div>
-                    <div className="status-badge-mini">
-                      {parkingOn ? '⚡ Active' : 'Inactive'}
-                    </div>
-                  </div>
-                  <button
-                    className={`luxury-toggle ${parkingOn ? 'active' : ''}`}
-                    onClick={toggleParking}
-                  >
-                    {parkingOn ? 'ON' : 'OFF'}
-                  </button>
+              {/* Outdoor Lights */}
+              <div className="section-title">🏡 OUTDOOR ZONES</div>
+              <div className="controls-grid">
+                <div className="light-card" onClick={toggleBalcony}>
+                  <span className="light-name">🌿 Balcony</span>
+                  <span className={`toggle-status ${balconyOn ? 'active' : ''}`}>{balconyOn ? 'ON' : 'OFF'}</span>
                 </div>
-
-                {/* All Lights Master */}
-                <div className="light-card" style={{ background: 'rgba(30,40,54,0.75)', marginTop: '0.2rem' }}>
-                  <div className="light-info">
-                    <div className="light-name">✨ All Lights · Master Scene</div>
-                    <div className="status-badge-mini">whole property</div>
-                  </div>
-                  <button className="luxury-toggle all-btn" onClick={masterAllLights}>
-                    {balconyOn && parkingOn ? 'ALL OFF' : 'ALL ON'}
-                  </button>
+                <div className="light-card" onClick={toggleParking}>
+                  <span className="light-name">🚗 Parking</span>
+                  <span className={`toggle-status ${parkingOn ? 'active' : ''}`}>{parkingOn ? 'ON' : 'OFF'}</span>
+                </div>
+                <div className="light-card" onClick={toggleEntrance}>
+                  <span className="light-name">🚪 Entrance</span>
+                  <span className={`toggle-status ${entranceOn ? 'active' : ''}`}>{entranceOn ? 'ON' : 'OFF'}</span>
+                </div>
+                <div className="light-card" onClick={toggleGarden}>
+                  <span className="light-name">🌳 Garden</span>
+                  <span className={`toggle-status ${gardenOn ? 'active' : ''}`}>{gardenOn ? 'ON' : 'OFF'}</span>
+                </div>
+                <div className="light-card" onClick={toggleSecurity}>
+                  <span className="light-name">🔒 Security</span>
+                  <span className={`toggle-status ${securityOn ? 'active' : ''}`}>{securityOn ? 'ON' : 'OFF'}</span>
                 </div>
               </div>
 
+              {/* Indoor Lights */}
+              <div className="section-title">✨ INTERIOR REALMS</div>
+              <div className="controls-grid">
+                <div className="light-card" onClick={toggleLivingRoom}>
+                  <span className="light-name">🛋 Living Room</span>
+                  <span className={`toggle-status ${livingRoomOn ? 'active' : ''}`}>{livingRoomOn ? 'ON' : 'OFF'}</span>
+                </div>
+                <div className="light-card" onClick={toggleBedroom}>
+                  <span className="light-name">🛏 Bedroom</span>
+                  <span className={`toggle-status ${bedroomOn ? 'active' : ''}`}>{bedroomOn ? 'ON' : 'OFF'}</span>
+                </div>
+                <div className="light-card" onClick={toggleDining}>
+                  <span className="light-name">🍽 Dining</span>
+                  <span className={`toggle-status ${diningOn ? 'active' : ''}`}>{diningOn ? 'ON' : 'OFF'}</span>
+                </div>
+                <div className="light-card" onClick={toggleTheater}>
+                  <span className="light-name">🎬 Home Theater</span>
+                  <span className={`toggle-status ${theaterOn ? 'active' : ''}`}>{theaterOn ? 'ON' : 'OFF'}</span>
+                </div>
+                <div className="light-card" onClick={togglePool}>
+                  <span className="light-name">🏊 Pool</span>
+                  <span className={`toggle-status ${poolOn ? 'active' : ''}`}>{poolOn ? 'ON' : 'OFF'}</span>
+                </div>
+              </div>
+
+              {/* Master All Lights */}
+              <button className="all-btn" onClick={masterAllLights}>
+                {allLightsOn ? 'ALL OFF — MASTER' : '✨ ALL LIGHTS — MASTER SCENE'}
+              </button>
+
               {/* Status Dashboard */}
               <div className="status-dashboard">
-                <div className="badge-row">
-                  <div className="badge-item">
-                    <span className="badge-label">🏡 Balcony</span>
-                    <span className={`badge-value ${balconyOn ? 'online' : 'offline'}`}>
-                      {balconyOn ? 'ONLINE' : 'OFFLINE'}
-                    </span>
-                  </div>
-                  <div className="badge-item">
-                    <span className="badge-label">🅿️ Parking</span>
-                    <span className={`badge-value ${parkingOn ? 'online' : 'offline'}`}>
-                      {parkingOn ? 'ONLINE' : 'OFFLINE'}
-                    </span>
-                  </div>
+                <div className="status-item">
+                  <span className="status-label">💡 ACTIVE LIGHTS</span>
+                  <span className="status-value">{activeCount} / 10</span>
                 </div>
-                <div className="badge-row">
-                  <div className="badge-item">
-                    <span className="badge-label">⚙️ System Core</span>
-                    <span className={`badge-value ${isAnyLightActive ? 'active' : 'standby'}`}>
-                      {isAnyLightActive ? 'ACTIVE' : 'STANDBY'}
-                    </span>
-                  </div>
-                  <div className="badge-item">
-                    <span className="badge-label">🌙 Live Scene</span>
-                    <span style={{ fontSize: '0.7rem', color: '#8DA3C0' }}>{sceneHint}</span>
-                  </div>
+                <div className="status-item">
+                  <span className="status-label">🎬 CURRENT SCENE</span>
+                  <span className="status-value" style={{ fontSize: '0.9rem' }}>{sceneHint}</span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">⚙️ SYSTEM CORE</span>
+                  <span className={`status-value ${activeCount > 0 ? 'badge-active' : ''}`}>
+                    {systemStatus}
+                  </span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">🌐 NETWORK</span>
+                  <span className="status-value" style={{ color: '#99F0C0' }}>ONLINE · 5G</span>
                 </div>
               </div>
             </div>
