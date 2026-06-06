@@ -1,7 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+
+// ============================================================
+// Apple HomeKit‑inspired dashboard – refined, clean, minimal
+// ============================================================
 
 const AbheeSmartHome = () => {
-  // ---------- State for all 10 lights ----------
+  // ----- 10 light states (driving villa overlays) -----
   const [balconyOn, setBalconyOn] = useState(false);
   const [parkingOn, setParkingOn] = useState(false);
   const [entranceOn, setEntranceOn] = useState(false);
@@ -13,567 +17,589 @@ const AbheeSmartHome = () => {
   const [theaterOn, setTheaterOn] = useState(false);
   const [securityOn, setSecurityOn] = useState(false);
 
-  // Toast state
-  const [toastMessage, setToastMessage] = useState('');
-  const [showToast, setShowToast] = useState(false);
-  const toastTimerRef = useRef(null);
-
-  // Helper: Show toast notification
-  const showToastMessage = (message) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage(message);
-    setShowToast(true);
-    toastTimerRef.current = setTimeout(() => {
-      setShowToast(false);
-    }, 2400);
+  const stateMap = {
+    1: { value: gardenOn, setter: setGardenOn },
+    2: { value: parkingOn, setter: setParkingOn },
+    3: { value: entranceOn, setter: setEntranceOn },
+    4: { value: securityOn, setter: setSecurityOn },
+    5: { value: livingRoomOn, setter: setLivingRoomOn },
+    6: { value: bedroomOn, setter: setBedroomOn },
+    7: { value: diningOn, setter: setDiningOn },
+    8: { value: theaterOn, setter: setTheaterOn },
+    9: { value: poolOn, setter: setPoolOn },
+    10: { value: balconyOn, setter: setBalconyOn },
   };
 
-  // Helper: get all light states as an object
-  const getAllLights = () => ({
-    balcony: balconyOn,
-    parking: parkingOn,
-    entrance: entranceOn,
-    garden: gardenOn,
-    pool: poolOn,
-    livingRoom: livingRoomOn,
-    bedroom: bedroomOn,
-    dining: diningOn,
-    theater: theaterOn,
-    security: securityOn,
+  // Overlay opacity effect (same as before)
+  useEffect(() => {
+    const overlays = {
+      balcony: document.getElementById('balconyOverlay'),
+      parking: document.getElementById('parkingOverlay'),
+      entrance: document.getElementById('entranceOverlay'),
+      garden: document.getElementById('gardenOverlay'),
+      pool: document.getElementById('poolOverlay'),
+      livingRoom: document.getElementById('livingRoomOverlay'),
+      bedroom: document.getElementById('bedroomOverlay'),
+      dining: document.getElementById('diningOverlay'),
+      theater: document.getElementById('theaterOverlay'),
+      security: document.getElementById('securityOverlay'),
+      allOn: document.getElementById('allOnOverlay'),
+    };
+    if (!overlays.balcony) return;
+
+    const allOn = Object.values(stateMap).every((s) => s.value);
+    if (allOn) {
+      overlays.allOn.style.opacity = '1';
+      Object.keys(overlays).forEach((key) => {
+        if (key !== 'allOn' && overlays[key]) overlays[key].style.opacity = '0';
+      });
+    } else {
+      overlays.allOn.style.opacity = '0';
+      overlays.balcony.style.opacity = balconyOn ? '1' : '0';
+      overlays.parking.style.opacity = parkingOn ? '1' : '0';
+      overlays.entrance.style.opacity = entranceOn ? '1' : '0';
+      overlays.garden.style.opacity = gardenOn ? '1' : '0';
+      overlays.pool.style.opacity = poolOn ? '1' : '0';
+      overlays.livingRoom.style.opacity = livingRoomOn ? '1' : '0';
+      overlays.bedroom.style.opacity = bedroomOn ? '1' : '0';
+      overlays.dining.style.opacity = diningOn ? '1' : '0';
+      overlays.theater.style.opacity = theaterOn ? '1' : '0';
+      overlays.security.style.opacity = securityOn ? '1' : '0';
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [balconyOn, parkingOn, entranceOn, gardenOn, poolOn, livingRoomOn, bedroomOn, diningOn, theaterOn, securityOn]);
+
+  // Device list
+  const devices = [
+    { id: 1, name: "Garden Lights", icon: "🌿", category: "Outdoor", auto: true },
+    { id: 2, name: "Parking Lights", icon: "🚗", category: "Outdoor", auto: false },
+    { id: 3, name: "Entrance Lights", icon: "🚪", category: "Indoor", auto: true },
+    { id: 4, name: "Security Lights", icon: "🔒", category: "Security", auto: false },
+    { id: 5, name: "Living Room", icon: "🛋️", category: "Indoor", auto: true },
+    { id: 6, name: "Bedroom", icon: "🛏️", category: "Indoor", auto: true },
+    { id: 7, name: "Dining Room", icon: "🍽️", category: "Indoor", auto: false },
+    { id: 8, name: "Home Theater", icon: "🎬", category: "Indoor", auto: false },
+    { id: 9, name: "Pool Lights", icon: "🏊", category: "Outdoor", auto: false },
+    { id: 10, name: "Landscape", icon: "🌳", category: "Outdoor", auto: false },
+  ];
+
+  // State for device ON/OFF (brightness and hours are no longer shown)
+  const [deviceStates, setDeviceStates] = useState(() => {
+    const init = {};
+    devices.forEach((d) => {
+      init[d.id] = d.id % 3 !== 0; // same seed logic
+    });
+    return init;
   });
 
-  // Count active lights
-  const activeCount = Object.values(getAllLights()).filter(Boolean).length;
-  const allLightsOn = activeCount === 10;
-
-  // Scene hint text (based on which lights are on)
-  const getSceneHint = () => {
-    if (allLightsOn) return '✨ full brilliance';
-    if (activeCount === 0) return 'dusk silhouette';
-    if (livingRoomOn && theaterOn && !bedroomOn) return '🎬 cinema mood';
-    if (livingRoomOn && diningOn && gardenOn) return '🍷 dinner party';
-    if (bedroomOn && securityOn && !livingRoomOn) return '🌙 good night';
-    return 'ambient zones';
-  };
-
-  // ---------- Lighting Logic (opacity transitions, no image swap) ----------
+  // Sync with villa lights
   useEffect(() => {
-    // Get all overlay elements
-    const balconyOverlay = document.getElementById('balconyOverlay');
-    const parkingOverlay = document.getElementById('parkingOverlay');
-    const entranceOverlay = document.getElementById('entranceOverlay');
-    const gardenOverlay = document.getElementById('gardenOverlay');
-    const poolOverlay = document.getElementById('poolOverlay');
-    const livingRoomOverlay = document.getElementById('livingRoomOverlay');
-    const bedroomOverlay = document.getElementById('bedroomOverlay');
-    const diningOverlay = document.getElementById('diningOverlay');
-    const theaterOverlay = document.getElementById('theaterOverlay');
-    const securityOverlay = document.getElementById('securityOverlay');
-    const allOnOverlay = document.getElementById('allOnOverlay');
+    const newStates = { ...deviceStates };
+    devices.forEach((device) => {
+      const { value } = stateMap[device.id];
+      if (newStates[device.id] !== value) {
+        newStates[device.id] = value;
+      }
+    });
+    setDeviceStates(newStates);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [balconyOn, parkingOn, entranceOn, gardenOn, poolOn, livingRoomOn, bedroomOn, diningOn, theaterOn, securityOn]);
 
-    if (!balconyOverlay) return; // DOM not ready
-
-    if (allLightsOn) {
-      // ALL lights ON → show alllighton.png, hide every individual overlay
-      allOnOverlay.style.opacity = '1';
-      balconyOverlay.style.opacity = '0';
-      parkingOverlay.style.opacity = '0';
-      entranceOverlay.style.opacity = '0';
-      gardenOverlay.style.opacity = '0';
-      poolOverlay.style.opacity = '0';
-      livingRoomOverlay.style.opacity = '0';
-      bedroomOverlay.style.opacity = '0';
-      diningOverlay.style.opacity = '0';
-      theaterOverlay.style.opacity = '0';
-      securityOverlay.style.opacity = '0';
-    } else {
-      // Otherwise show/hide each overlay based on its state
-      allOnOverlay.style.opacity = '0';
-      balconyOverlay.style.opacity = balconyOn ? '1' : '0';
-      parkingOverlay.style.opacity = parkingOn ? '1' : '0';
-      entranceOverlay.style.opacity = entranceOn ? '1' : '0';
-      gardenOverlay.style.opacity = gardenOn ? '1' : '0';
-      poolOverlay.style.opacity = poolOn ? '1' : '0';
-      livingRoomOverlay.style.opacity = livingRoomOn ? '1' : '0';
-      bedroomOverlay.style.opacity = bedroomOn ? '1' : '0';
-      diningOverlay.style.opacity = diningOn ? '1' : '0';
-      theaterOverlay.style.opacity = theaterOn ? '1' : '0';
-      securityOverlay.style.opacity = securityOn ? '1' : '0';
-    }
-  }, [
-    balconyOn, parkingOn, entranceOn, gardenOn, poolOn,
-    livingRoomOn, bedroomOn, diningOn, theaterOn, securityOn, allLightsOn
-  ]);
-
-  // ---------- Toggle Handlers with toast messages ----------
-  const toggleBalcony = () => {
-    const newState = !balconyOn;
-    setBalconyOn(newState);
-    showToastMessage(newState ? '✨ Balcony Lights Activated' : '🌙 Balcony Lights Deactivated');
-  };
-  const toggleParking = () => {
-    const newState = !parkingOn;
-    setParkingOn(newState);
-    showToastMessage(newState ? '🚗 Parking Lights Activated' : '🛑 Parking Lights Deactivated');
-  };
-  const toggleEntrance = () => {
-    const newState = !entranceOn;
-    setEntranceOn(newState);
-    showToastMessage(newState ? '🚪 Entrance Lights Activated' : '🌙 Entrance Lights Deactivated');
-  };
-  const toggleGarden = () => {
-    const newState = !gardenOn;
-    setGardenOn(newState);
-    showToastMessage(newState ? '🌳 Garden Lights Activated' : '🌙 Garden Lights Deactivated');
-  };
-  const togglePool = () => {
-    const newState = !poolOn;
-    setPoolOn(newState);
-    showToastMessage(newState ? '🏊 Pool Lights Activated' : '🌙 Pool Lights Deactivated');
-  };
-  const toggleLivingRoom = () => {
-    const newState = !livingRoomOn;
-    setLivingRoomOn(newState);
-    showToastMessage(newState ? '🛋 Living Room Lights Activated' : '🌙 Living Room Lights Deactivated');
-  };
-  const toggleBedroom = () => {
-    const newState = !bedroomOn;
-    setBedroomOn(newState);
-    showToastMessage(newState ? '🛏 Bedroom Lights Activated' : '🌙 Bedroom Lights Deactivated');
-  };
-  const toggleDining = () => {
-    const newState = !diningOn;
-    setDiningOn(newState);
-    showToastMessage(newState ? '🍽 Dining Lights Activated' : '🌙 Dining Lights Deactivated');
-  };
-  const toggleTheater = () => {
-    const newState = !theaterOn;
-    setTheaterOn(newState);
-    showToastMessage(newState ? '🎬 Home Theater Activated' : '🌙 Home Theater Deactivated');
-  };
-  const toggleSecurity = () => {
-    const newState = !securityOn;
-    setSecurityOn(newState);
-    showToastMessage(newState ? '🔒 Security Lights Activated' : '🌙 Security Lights Deactivated');
+  const toggleDevice = (id) => {
+    const { value, setter } = stateMap[id];
+    setter(!value);
+    setDeviceStates((prev) => ({ ...prev, [id]: !value }));
   };
 
-  // Master All Lights: turn all ON or all OFF
-  const masterAllLights = () => {
-    if (allLightsOn) {
-      setBalconyOn(false);
-      setParkingOn(false);
-      setEntranceOn(false);
-      setGardenOn(false);
-      setPoolOn(false);
-      setLivingRoomOn(false);
-      setBedroomOn(false);
-      setDiningOn(false);
-      setTheaterOn(false);
-      setSecurityOn(false);
-      showToastMessage('🌑 All Lights Deactivated · System Standby');
-    } else {
-      setBalconyOn(true);
-      setParkingOn(true);
-      setEntranceOn(true);
-      setGardenOn(true);
-      setPoolOn(true);
-      setLivingRoomOn(true);
-      setBedroomOn(true);
-      setDiningOn(true);
-      setTheaterOn(true);
-      setSecurityOn(true);
-      showToastMessage('✨ All Lights Activated · Full Brilliance');
-    }
+  const allLightsOn = Object.values(stateMap).every((s) => s.value);
+  const toggleAllLights = () => {
+    const newOn = !allLightsOn;
+    Object.values(stateMap).forEach(({ setter }) => setter(newOn));
+    const newDeviceStates = { ...deviceStates };
+    devices.forEach((device) => {
+      newDeviceStates[device.id] = newOn;
+    });
+    setDeviceStates(newDeviceStates);
   };
 
-  // System status badge
-  const systemStatus = activeCount > 0 ? 'ACTIVE' : 'STANDBY';
-  const sceneHint = getSceneHint();
+  // Scenes (same logic but simplified)
+  const scenes = {
+    "Good Morning": () => {
+      devices.forEach((d) => {
+        if ([1, 3, 5, 6].includes(d.id)) stateMap[d.id].setter(true);
+        else if (d.id === 10) stateMap[d.id].setter(true);
+        else stateMap[d.id].setter(false);
+      });
+    },
+    "Movie Mode": () => {
+      devices.forEach((d) => stateMap[d.id].setter(d.id === 8));
+    },
+    "Good Night": () => {
+      devices.forEach((d) => stateMap[d.id].setter(d.id === 6 || d.id === 4));
+    },
+    Away: () => devices.forEach((d) => stateMap[d.id].setter(false)),
+    "Bright All": () => devices.forEach((d) => stateMap[d.id].setter(true)),
+  };
 
-  // ---------- Render ----------
-  return (
-    <div style={{ width: '100%' }}>
-      <style>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          -webkit-tap-highlight-color: transparent;
-        }
+  // Calculate energy (simplified)
+  const activeCount = Object.values(stateMap).filter((s) => s.value).length;
+  const energyKwh = (activeCount * 0.42).toFixed(1);
+  const costEstimate = (activeCount * 0.42 * 9).toFixed(0);
 
-        .abhee-smart-home {
-          background: radial-gradient(circle at 20% 30%, #0B0C10, #030507);
-          font-family: system-ui, -apple-system, 'SF Pro Text', 'SF Pro Display', 'Inter', sans-serif;
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 2rem 1.5rem;
-        }
+  // ------------------------------------------------------------------
+  // Apple Home‑style components
+  // ------------------------------------------------------------------
+  const IosSwitch = ({ isOn, onToggle }) => (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      style={{
+        width: 36,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: isOn ? "#34C759" : "#D1D1D6",
+        cursor: "pointer",
+        position: "relative",
+        transition: "background-color 0.2s ease",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 2,
+          left: isOn ? 18 : 2,
+          width: 16,
+          height: 16,
+          borderRadius: "50%",
+          backgroundColor: "#FFFFFF",
+          transition: "left 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+        }}
+      />
+    </div>
+  );
 
-        .showcase-container {
-          max-width: 1440px;
-          width: 100%;
-          margin: 0 auto;
-          background: rgba(15, 20, 28, 0.55);
-          backdrop-filter: blur(12px);
-          border-radius: 2.5rem;
-          box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
-          overflow: hidden;
-        }
+  const DeviceCard = ({ device, isOn, onToggle }) => (
+    <div
+      onClick={() => onToggle(device.id)}
+      style={{
+        height: 90,
+        padding: 8,
+        borderRadius: 16,
+        backgroundColor: isOn ? "#E8F8EC" : "#FFFFFF",
+        border: isOn ? "1px solid #34C759" : "1px solid #E5E5EA",
+        boxShadow: isOn ? "0 2px 8px rgba(52,199,89,0.12)" : "none",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 20, lineHeight: 1 }}>{device.icon}</span>
+        <IosSwitch isOn={isOn} onToggle={() => onToggle(device.id)} />
+      </div>
+      <div>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#1C1C1E",
+            lineHeight: 1.3,
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+          }}
+        >
+          {device.name}
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              backgroundColor: isOn ? "#34C759" : "#8E8E93",
+            }}
+          />
+          <span style={{ fontSize: 10, fontWeight: 500, color: isOn ? "#28CD41" : "#8E8E93" }}>
+            {isOn ? "ON" : "OFF"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 
-        .dashboard {
-          display: flex;
-          flex-direction: row;
-          flex-wrap: wrap;
-        }
+  const SceneButton = ({ label, icon, isActive, onClick }) => (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        height: 30,
+        padding: "0 12px",
+        borderRadius: 20,
+        backgroundColor: isActive ? "#34C759" : "#FFFFFF",
+        border: "1px solid #E5E5EA",
+        fontSize: 11,
+        fontWeight: 600,
+        color: isActive ? "#FFFFFF" : "#1C1C1E",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        transition: "all 0.2s ease",
+        boxShadow: isActive ? "0 2px 6px rgba(52,199,89,0.25)" : "none",
+      }}
+    >
+      <span style={{ fontSize: 13 }}>{icon}</span>
+      {label}
+    </button>
+  );
 
-        .house-preview {
-          flex: 1.4;
-          min-width: 280px;
-          padding: 2rem 1.8rem 2rem 2rem;
-        }
+  const FilterButton = ({ label, isActive, onClick }) => (
+    <button
+      onClick={onClick}
+      style={{
+        height: 30,
+        padding: "0 14px",
+        borderRadius: 20,
+        backgroundColor: isActive ? "#1C1C1E" : "#FFFFFF",
+        border: "1px solid #E5E5EA",
+        fontSize: 11,
+        fontWeight: 600,
+        color: isActive ? "#FFFFFF" : "#8E8E93",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        transition: "all 0.2s ease",
+      }}
+    >
+      {label}
+    </button>
+  );
 
-        .preview-header {
-          margin-bottom: 1.5rem;
-        }
-
-        .preview-header h2 {
-          font-size: 1.7rem;
-          font-weight: 600;
-          background: linear-gradient(135deg, #FFFFFF 30%, #A0B0C5 80%);
-          background-clip: text;
-          -webkit-background-clip: text;
-          color: transparent;
-        }
-
-        .preview-sub {
-          font-size: 0.85rem;
-          color: #8E9Aaf;
-        }
-
-        .house-stage {
-          position: relative;
-          width: 100%;
-          border-radius: 2rem;
-          overflow: hidden;
-          box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
-          background: #010205;
-        }
-
-        .base-house {
-          display: block;
-          width: 100%;
-          height: auto;
-          pointer-events: none;
-          border-radius: 1.8rem;
-        }
-
-        .light-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          pointer-events: none;
-          transition: opacity 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-          opacity: 0;
-          border-radius: 1.8rem;
-        }
-
-        .overlay-all { z-index: 50; }
-        .overlay-normal { z-index: 10; }
-
-        .control-panel {
-          flex: 1;
-          min-width: 340px;
-          background: rgba(12, 18, 26, 0.7);
-          backdrop-filter: blur(20px);
-          border-left: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 2rem;
-          margin: 1.5rem;
-          padding: 1.8rem;
-          box-shadow: -8px 0 25px -15px rgba(0, 0, 0, 0.3);
-        }
-
-        .panel-title {
-          font-size: 1.4rem;
-          font-weight: 590;
-          color: #F0F3FA;
-          margin-bottom: 1rem;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .panel-title span {
-          background: rgba(255, 255, 255, 0.08);
-          padding: 4px 12px;
-          border-radius: 40px;
-          font-size: 0.7rem;
-          color: #B6C8E5;
-        }
-
-        .section-title {
-          font-size: 0.85rem;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          font-weight: 600;
-          color: #B8C6F0;
-          margin: 1rem 0 0.8rem 0;
-        }
-
-        .controls-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-          gap: 0.9rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .light-card {
-          background: rgba(20, 28, 38, 0.65);
-          border-radius: 1.5rem;
-          padding: 0.7rem 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          transition: all 0.2s;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          cursor: pointer;
-        }
-
-        .light-card:hover {
-          background: rgba(40, 55, 78, 0.85);
-          border-color: rgba(210, 180, 140, 0.35);
-        }
-
-        .light-name {
-          font-weight: 500;
-          font-size: 0.9rem;
-          color: #F3F6FE;
-        }
-
-        .toggle-status {
-          font-size: 0.7rem;
-          font-weight: 600;
-          padding: 0.2rem 0.7rem;
-          border-radius: 30px;
-          background: rgba(0, 0, 0, 0.5);
-          color: #B8CBF0;
-        }
-
-        .toggle-status.active {
-          background: #2C6E9E;
-          color: white;
-          box-shadow: 0 0 6px #3f9eff;
-        }
-
-        .all-btn {
-          background: linear-gradient(95deg, #1F2A3A, #11161F);
-          border: 1px solid rgba(255, 215, 130, 0.3);
-          width: 100%;
-          border-radius: 3rem;
-          padding: 0.9rem;
-          margin: 1rem 0 0.5rem;
-          font-weight: 700;
-          font-size: 1rem;
-          color: #F5E7D3;
-          cursor: pointer;
-          text-align: center;
-        }
-
-        .status-dashboard {
-          background: rgba(8, 12, 18, 0.6);
-          border-radius: 1.5rem;
-          padding: 1rem;
-          margin-top: 1.5rem;
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1rem;
-        }
-
-        .status-item {
-          display: flex;
-          flex-direction: column;
-          gap: 0.2rem;
-        }
-
-        .status-label {
-          font-size: 0.7rem;
-          color: #8C9BC2;
-        }
-
-        .status-value {
-          font-weight: 650;
-          font-size: 1rem;
-          color: #F0F5FF;
-        }
-
-        .badge-active {
-          color: #A4FFC3;
-          background: rgba(70, 200, 100, 0.15);
-          padding: 0.2rem 0.6rem;
-          border-radius: 40px;
-          font-size: 0.7rem;
-          display: inline-block;
-        }
-
-        .toast-message {
-          position: fixed;
-          bottom: 2rem;
-          left: 50%;
-          transform: translateX(-50%) translateY(20px);
-          background: rgba(25, 32, 45, 0.96);
-          backdrop-filter: blur(18px);
-          color: white;
-          padding: 0.8rem 1.6rem;
-          border-radius: 60px;
-          font-size: 0.9rem;
-          font-weight: 500;
-          box-shadow: 0 12px 28px -8px black;
-          z-index: 1000;
-          opacity: 0;
-          transition: opacity 0.25s, transform 0.3s ease;
-          pointer-events: none;
-          border: 1px solid rgba(255, 235, 180, 0.3);
-        }
-
-        .toast-message.show {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
-        }
-
-        @media (max-width: 860px) {
-          .abhee-smart-home { padding: 1rem; }
-          .dashboard { flex-direction: column; }
-          .control-panel { margin: 1rem; border-left: none; }
-          .house-preview { padding: 1.2rem; }
-        }
-
-        @media (max-width: 540px) {
-          .controls-grid { grid-template-columns: 1fr; }
-        }
-
-        img { user-select: none; -webkit-user-drag: none; }
-      `}</style>
-
-      <div className="abhee-smart-home">
-        <div className="showcase-container">
-          <div className="dashboard">
-            {/* LEFT: Fixed House Preview with all overlays */}
-            <div className="house-preview">
-              <div className="preview-header">
-                <h2>✦ Abhee Lumina Villa</h2>
-                <div className="preview-sub">Ambient Intelligence | Live lighting orchestration</div>
-              </div>
-              <div className="house-stage">
-                <img className="base-house" src="../images/alllightoff.png" alt="villa base" />
-                {/* Individual overlays */}
-                <img id="balconyOverlay" className="light-overlay overlay-normal" src="../images/bal.png" alt="balcony" style={{ opacity: 0 }} />
-                <img id="parkingOverlay" className="light-overlay overlay-normal" src="../images/parking.png" alt="parking" style={{ opacity: 0 }} />
-                <img id="entranceOverlay" className="light-overlay overlay-normal" src="../images/entranceOn.png" alt="entrance" style={{ opacity: 0 }} />
-                <img id="gardenOverlay" className="light-overlay overlay-normal" src="../images/gardenOn.png" alt="garden" style={{ opacity: 0 }} />
-                <img id="poolOverlay" className="light-overlay overlay-normal" src="../images/poolOn.png" alt="pool" style={{ opacity: 0 }} />
-                <img id="livingRoomOverlay" className="light-overlay overlay-normal" src="../images/livingRoomOn.png" alt="living room" style={{ opacity: 0 }} />
-                <img id="bedroomOverlay" className="light-overlay overlay-normal" src="../images/bedroomOn.png" alt="bedroom" style={{ opacity: 0 }} />
-                <img id="diningOverlay" className="light-overlay overlay-normal" src="../images/diningOn.png" alt="dining" style={{ opacity: 0 }} />
-                <img id="theaterOverlay" className="light-overlay overlay-normal" src="../images/theaterOn.png" alt="theater" style={{ opacity: 0 }} />
-                <img id="securityOverlay" className="light-overlay overlay-normal" src="../images/securityOn.png" alt="security" style={{ opacity: 0 }} />
-                {/* Master all-light overlay (highest z-index) */}
-                <img id="allOnOverlay" className="light-overlay overlay-all" src="../images/alllighton.png" alt="all lights" style={{ opacity: 0 }} />
-              </div>
+  // ------------------------------------------------------------------
+  // Dashboard content (used both inside phone frame and full width)
+  // ------------------------------------------------------------------
+  const DashboardContent = ({
+    activeCount,
+    energyKwh,
+    costEstimate,
+    allLightsOn,
+    toggleAllLights,
+    activeScene,
+    setActiveScene,
+    activeFilter,
+    setActiveFilter,
+    filteredDevices,
+    deviceStates,
+    toggleDevice,
+  }) => {
+    return (
+      <div style={{ height: "100%", display: "flex", flexDirection: "column", overflowY: "auto", paddingBottom: 16 }}>
+        {/* Status Bar (only decorative) */}
+        <div style={{ padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FFFFFF" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#1C1C1E" }}>9:41</span>
+          <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ width: 18, height: 10, border: "1px solid #1C1C1E", borderRadius: 3, display: "flex", alignItems: "center", padding: "0 1px" }}>
+              <div style={{ width: 12, height: 6, backgroundColor: "#34C759", borderRadius: 1 }} />
             </div>
+          </div>
+        </div>
 
-            {/* RIGHT: Control Panel */}
-            <div className="control-panel">
-              <div className="panel-title">
-                Light Concierge
-                <span>LUXE</span>
-              </div>
+        {/* Header */}
+        <div style={{ padding: "4px 16px 8px" }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#1C1C1E", margin: 0 }}>ABHEE Smart Villa</h1>
+          <p style={{ fontSize: 12, color: "#8E8E93", margin: "2px 0 0" }}>Lighting Control</p>
+        </div>
 
-              {/* Outdoor Lights */}
-              <div className="section-title">🏡 OUTDOOR ZONES</div>
-              <div className="controls-grid">
-                <div className="light-card" onClick={toggleBalcony}>
-                  <span className="light-name">🌿 Balcony</span>
-                  <span className={`toggle-status ${balconyOn ? 'active' : ''}`}>{balconyOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={toggleParking}>
-                  <span className="light-name">🚗 Parking</span>
-                  <span className={`toggle-status ${parkingOn ? 'active' : ''}`}>{parkingOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={toggleEntrance}>
-                  <span className="light-name">🚪 Entrance</span>
-                  <span className={`toggle-status ${entranceOn ? 'active' : ''}`}>{entranceOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={toggleGarden}>
-                  <span className="light-name">🌳 Garden</span>
-                  <span className={`toggle-status ${gardenOn ? 'active' : ''}`}>{gardenOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={toggleSecurity}>
-                  <span className="light-name">🔒 Security</span>
-                  <span className={`toggle-status ${securityOn ? 'active' : ''}`}>{securityOn ? 'ON' : 'OFF'}</span>
-                </div>
-              </div>
-
-              {/* Indoor Lights */}
-              <div className="section-title">✨ INTERIOR REALMS</div>
-              <div className="controls-grid">
-                <div className="light-card" onClick={toggleLivingRoom}>
-                  <span className="light-name">🛋 Living Room</span>
-                  <span className={`toggle-status ${livingRoomOn ? 'active' : ''}`}>{livingRoomOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={toggleBedroom}>
-                  <span className="light-name">🛏 Bedroom</span>
-                  <span className={`toggle-status ${bedroomOn ? 'active' : ''}`}>{bedroomOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={toggleDining}>
-                  <span className="light-name">🍽 Dining</span>
-                  <span className={`toggle-status ${diningOn ? 'active' : ''}`}>{diningOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={toggleTheater}>
-                  <span className="light-name">🎬 Home Theater</span>
-                  <span className={`toggle-status ${theaterOn ? 'active' : ''}`}>{theaterOn ? 'ON' : 'OFF'}</span>
-                </div>
-                <div className="light-card" onClick={togglePool}>
-                  <span className="light-name">🏊 Pool</span>
-                  <span className={`toggle-status ${poolOn ? 'active' : ''}`}>{poolOn ? 'ON' : 'OFF'}</span>
-                </div>
-              </div>
-
-              {/* Master All Lights */}
-              <button className="all-btn" onClick={masterAllLights}>
-                {allLightsOn ? 'ALL OFF — MASTER' : '✨ ALL LIGHTS — MASTER SCENE'}
-              </button>
-
-              {/* Status Dashboard */}
-              <div className="status-dashboard">
-                <div className="status-item">
-                  <span className="status-label">💡 ACTIVE LIGHTS</span>
-                  <span className="status-value">{activeCount} / 10</span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">🎬 CURRENT SCENE</span>
-                  <span className="status-value" style={{ fontSize: '0.9rem' }}>{sceneHint}</span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">⚙️ SYSTEM CORE</span>
-                  <span className={`status-value ${activeCount > 0 ? 'badge-active' : ''}`}>
-                    {systemStatus}
-                  </span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">🌐 NETWORK</span>
-                  <span className="status-value" style={{ color: '#99F0C0' }}>ONLINE · 5G</span>
-                </div>
+        {/* Summary Card */}
+        <div style={{ margin: "4px 16px", background: "linear-gradient(135deg, #34C759, #30D158)", borderRadius: 16, padding: "12px 16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.7)", margin: 0, textTransform: "uppercase" }}>Active Devices</p>
+              <p style={{ fontSize: 24, fontWeight: 700, color: "#FFF", margin: "2px 0" }}>
+                {activeCount}<span style={{ fontSize: 14, opacity: 0.7 }}>/10</span>
+              </p>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", margin: "4px 0 0" }}>
+                ⚡ {energyKwh} kWh · ₹{costEstimate}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.8)", marginBottom: 6, textAlign: "right" }}>All Lights</p>
+              <div
+                onClick={toggleAllLights}
+                style={{
+                  width: 44,
+                  height: 24,
+                  borderRadius: 12,
+                  background: allLightsOn ? "#FFFFFF" : "rgba(255,255,255,0.3)",
+                  position: "relative",
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    left: allLightsOn ? 24 : 2,
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    background: allLightsOn ? "#34C759" : "#FFFFFF",
+                    transition: "left 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Toast Notification */}
-        <div className={`toast-message ${showToast ? 'show' : ''}`}>{toastMessage}</div>
+        {/* Scenes Row */}
+        <div style={{ display: "flex", gap: 8, padding: "12px 16px", overflowX: "auto", scrollbarWidth: "none" }}>
+          {[
+            { label: "Good Morning", icon: "🌅" },
+            { label: "Movie Mode", icon: "🎬" },
+            { label: "Good Night", icon: "🌙" },
+            { label: "Away", icon: "🏠" },
+            { label: "Bright All", icon: "☀️" },
+          ].map((scene) => (
+            <SceneButton
+              key={scene.label}
+              label={scene.label}
+              icon={scene.icon}
+              isActive={activeScene === scene.label}
+              onClick={() => {
+                setActiveScene(scene.label);
+                scenes[scene.label]();
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Filter Pills */}
+        <div style={{ display: "flex", gap: 6, padding: "0 16px 12px", overflowX: "auto" }}>
+          {["All", "Indoor", "Outdoor", "Security"].map((filter) => (
+            <FilterButton
+              key={filter}
+              label={filter}
+              isActive={activeFilter === filter}
+              onClick={() => setActiveFilter(filter)}
+            />
+          ))}
+        </div>
+
+        {/* Device Grid */}
+        <div style={{ padding: "0 16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+            {filteredDevices.map((device) => (
+              <DeviceCard
+                key={device.id}
+                device={device}
+                isOn={deviceStates[device.id]}
+                onToggle={toggleDevice}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom Navigation (simulated – no routing) */}
+        <div style={{ marginTop: "auto", borderTop: "1px solid #E5E5EA", padding: "8px 16px 12px", display: "flex", justifyContent: "space-between", background: "#FFFFFF" }}>
+          {["Home", "Devices", "Automations", "Controls", "Settings"].map((item, idx) => (
+            <div key={item} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, opacity: idx === 0 ? 1 : 0.5 }}>
+              <span style={{ fontSize: 18, color: idx === 0 ? "#34C759" : "#8E8E93" }}>
+                {item === "Home" ? "🏠" : item === "Devices" ? "📱" : item === "Automations" ? "⚡" : item === "Controls" ? "🎮" : "⚙️"}
+              </span>
+              <span style={{ fontSize: 9, fontWeight: 500, color: idx === 0 ? "#34C759" : "#8E8E93" }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // ------------------------------------------------------------------
+  // Main layout: villa preview + phone frame (desktop) or full width (mobile)
+  // ------------------------------------------------------------------
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeScene, setActiveScene] = useState(null);
+  const filters = ["All", "Indoor", "Outdoor", "Security"];
+  const filteredDevices = devices.filter((d) => (activeFilter === "All" ? true : d.category === activeFilter));
+
+  return (
+    <div
+      style={{
+        background: "radial-gradient(circle at 20% 30%, #0B0C10, #030507)",
+        minHeight: "100vh",
+        fontFamily:
+          "system-ui, -apple-system, 'SF Pro Text', 'SF Pro Display', Inter, sans-serif",
+        padding: "clamp(0.75rem, 3vw, 2rem)",
+        overflowX: "hidden",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "1440px",
+          margin: "0 auto",
+          background: "rgba(15, 20, 28, 0.45)",
+          backdropFilter: "blur(8px)",
+          borderRadius: "2.5rem",
+          padding: "clamp(0.8rem, 3vw, 1.5rem)",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "clamp(1rem, 4vw, 2rem)" }}>
+          {/* Villa Preview – always visible */}
+          <div style={{ width: "100%" }}>
+            <div style={{ marginBottom: "1rem" }}>
+              <h2
+                style={{
+                  fontSize: "clamp(1.3rem, 5vw, 1.7rem)",
+                  fontWeight: 600,
+                  background: "linear-gradient(135deg, #FFFFFF 30%, #A0B0C5 80%)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                ✦ Abhee Lumina Villa
+              </h2>
+              <p style={{ fontSize: "clamp(0.7rem, 3vw, 0.85rem)", color: "#8E9Aaf" }}>
+                Ambient Intelligence | Live lighting orchestration
+              </p>
+            </div>
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                borderRadius: "2rem",
+                overflow: "hidden",
+                background: "#010205",
+                boxShadow: "0 20px 35px -10px rgba(0,0,0,0.5)",
+              }}
+            >
+              <img
+                src="../images/alllightoff.png"
+                alt="villa base"
+                style={{ width: "100%", height: "auto", display: "block" }}
+              />
+              {/* Overlays (kept as before) */}
+              <img id="balconyOverlay" src="../images/bal.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="parkingOverlay" src="../images/parking.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="entranceOverlay" src="../images/entranceOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="gardenOverlay" src="../images/gardenOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="poolOverlay" src="../images/poolOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="livingRoomOverlay" src="../images/livingRoomOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="bedroomOverlay" src="../images/bedroomOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="diningOverlay" src="../images/diningOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="theaterOverlay" src="../images/theaterOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="securityOverlay" src="../images/securityOn.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem" }} />
+              <img id="allOnOverlay" src="../images/alllighton.png" alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, transition: "opacity 0.4s cubic-bezier(0.2,0.9,0.4,1.1)", pointerEvents: "none", borderRadius: "1.8rem", zIndex: 50 }} />
+            </div>
+          </div>
+
+          {/* Dashboard container – responsive frame vs full width */}
+          <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <style>
+              {`
+                @media (max-width: 767px) {
+                  .desktop-phone-frame { display: none !important; }
+                  .mobile-dashboard-full { display: block !important; }
+                }
+                @media (min-width: 768px) {
+                  .desktop-phone-frame { display: flex !important; }
+                  .mobile-dashboard-full { display: none !important; }
+                }
+              `}
+            </style>
+
+            {/* Desktop: iPhone frame */}
+            <div className="desktop-phone-frame" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+              <div
+                style={{
+                  width: 390,
+                  height: 780,
+                  background: "#111113",
+                  borderRadius: 48,
+                  boxShadow: "0 30px 40px -20px rgba(0,0,0,0.5), 0 0 0 6px #3a3a3e, 0 0 0 12px #1c1c1e",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Dynamic Island */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 120,
+                    height: 34,
+                    background: "#0a0a0c",
+                    borderRadius: 28,
+                    zIndex: 20,
+                  }}
+                />
+                <div
+                  style={{
+                    background: "#F2F2F7",
+                    borderRadius: 48,
+                    margin: 12,
+                    height: "calc(100% - 24px)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <DashboardContent
+                    activeCount={activeCount}
+                    energyKwh={energyKwh}
+                    costEstimate={costEstimate}
+                    allLightsOn={allLightsOn}
+                    toggleAllLights={toggleAllLights}
+                    activeScene={activeScene}
+                    setActiveScene={setActiveScene}
+                    activeFilter={activeFilter}
+                    setActiveFilter={setActiveFilter}
+                    filteredDevices={filteredDevices}
+                    deviceStates={deviceStates}
+                    toggleDevice={toggleDevice}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: full width dashboard */}
+            <div className="mobile-dashboard-full" style={{ display: "none", width: "100%", padding: "0 8px" }}>
+              <div
+                style={{
+                  background: "#F2F2F7",
+                  borderRadius: 32,
+                  overflow: "hidden",
+                  width: "100%",
+                }}
+              >
+                <DashboardContent
+                  activeCount={activeCount}
+                  energyKwh={energyKwh}
+                  costEstimate={costEstimate}
+                  allLightsOn={allLightsOn}
+                  toggleAllLights={toggleAllLights}
+                  activeScene={activeScene}
+                  setActiveScene={setActiveScene}
+                  activeFilter={activeFilter}
+                  setActiveFilter={setActiveFilter}
+                  filteredDevices={filteredDevices}
+                  deviceStates={deviceStates}
+                  toggleDevice={toggleDevice}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
