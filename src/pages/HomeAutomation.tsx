@@ -429,7 +429,6 @@ const AbheeSmartHome = () => {
   // ------------------------------------------------------------------
   const [activeFilter, setActiveFilter] = useState("All");
   const [activeScene, setActiveScene] = useState(null);
-  const filters = ["All", "Indoor", "Outdoor", "Security"];
   const filteredDevices = devices.filter((d) => (activeFilter === "All" ? true : d.category === activeFilter));
 
   return (
